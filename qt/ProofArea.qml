@@ -455,16 +455,39 @@ Item {
 
                     Action {
                         text: "Remove this Line"
-                        enabled: !((premiseCount == listView.count)
-                                   && (listView.count == 1))
+                        enabled: true 
 
                         onTriggered: {
-                            if (type === "premise")
-                                premiseCount--
-                            var i = index
-                            theData.removeLineAt(index)
-                            proofModel.updateLines()
-                            proofModel.updateRefs(i, false)
+                            if (listView.count > 1) {
+                                // NORMAL BEHAVIOR: Delete the row
+                                if (type === "premise")
+                                    premiseCount--
+                                
+                                var i = index
+                                theData.removeLineAt(index)
+                                proofModel.updateLines()
+                                proofModel.updateRefs(i, false)
+                            } else {
+                                // Instead of editing the line, we kill it and instantly replace it.
+                                
+                                // 1. Physically remove the last line from the backend
+                                theData.removeLineAt(0)
+                                
+                                // 2. Immediately insert a factory-default line
+                                theData.insertLine(0, 1, "", "premise", false, false, false, 0, [-1])
+                                
+                                // 3. Reset the metadata count
+                                premiseCount = 1
+                                
+                                // 4. Force UI numbering refresh
+                                proofModel.updateLines()
+                                
+                                // 5. Ensure focus stays on the new line
+                                listView.currentIndex = 0
+                                
+                                console.log("Last line hard-reset via Remove/Insert sequence.")
+                            }
+                            
                             cConnector.evalText = "Evaluate Proof"
                         }
                     }

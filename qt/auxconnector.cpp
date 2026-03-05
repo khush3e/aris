@@ -102,7 +102,12 @@ void auxConnector::importProof(const QString &name, ProofData *pd, const Connect
 
     refs = (short *) calloc (proof->everything->num_stuff, sizeof(int));
 
-    int num_ins = 1;
+    while (pd->lines().size() > 0) {
+        pd->removeLineAt(0);
+    }
+    pm->updateLines();
+    int num_ins = 0;
+    
     for (pf_itr =(item_t *) proof->everything->head; pf_itr != NULL; pf_itr = pf_itr->next){
         sen_data *sd;
         char *pf_text;
