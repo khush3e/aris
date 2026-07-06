@@ -27,8 +27,6 @@
 #include <math.h>
 
 
-struct connectives_list main_conns;
-
 struct connectives_list main_conns = { 0 };
 
 /* Eliminates a negation from a string.

@@ -236,7 +236,7 @@ void Connector::genIndices(const ProofData *toBeEval)
  */
 void Connector::genProof(const ProofData *toBeEval)
 {
-    main_conns = gui_conns;
+    m_conns = gui_conns;
     int conn = 1;
     std::regex pat("[&|~$%@#!^:>]");
  
@@ -278,7 +278,7 @@ void Connector::genProof(const ProofData *toBeEval)
         std::string str = pl.pText.toStdString();
 
         if (conn && std::regex_search(str, pat)) {
-            main_conns = cli_conns;
+            m_conns = cli_conns;
             conn = 0;
         }
 
@@ -354,7 +354,7 @@ int Connector::evalProof(const ProofData *toBeEval, const GoalData *gls, ProofMo
         destroy_str_vec(returns);
     returns = init_vec(sizeof(char *));
 
-    if (!proof_eval(cProof, returns, 1))
+    if (!proof_eval(cProof, returns, 1, m_conns))
         qDebug() << "Proof Evaluated Successfully";
     else
         qDebug() << "Memory Error";

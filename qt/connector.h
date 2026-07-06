@@ -22,6 +22,7 @@
 #include <QObject>
 #include <QHash>
 #include "../src/typedef.h"
+#include "../src/process.h"
 #include "proofdata.h"
 #include "goaldata.h"
 #include "proofmodel.h"
@@ -81,6 +82,7 @@ signals:
 private:
     proof_t * cProof;
     vec_t * returns;
+    struct connectives_list m_conns;   // connectives chosen by genProof()
 //    QHash<QString,int> rulesMap;
 //    QHash<int,QString> reverseRulesMap;
     QString m_evalText;
