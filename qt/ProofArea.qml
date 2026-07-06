@@ -54,14 +54,14 @@ Item {
         proofModel.updateLines()
         proofModel.updateRefs(myIdx, false)
 
-        // After removal the boundary shifts to premiseCount - 1.
-        var insertAt = proofModel.premiseCount - 1
+        // After removal, recomputePremiseCount has already fired and premiseCount
+        // is now P-1. The insert boundary (first conclusion slot) is exactly premiseCount.
+        var insertAt = proofModel.premiseCount
         theData.insertLine(insertAt, insertAt + 1, pText, "choose",
                            pSub, pSubSt, pSubEnd, pInd, [-1])
         proofModel.updateLines()
         proofModel.updateRefs(insertAt, true)
         listView.currentIndex = insertAt
-        proofModel.premiseCount = proofModel.premiseCount - 1
 
         fileModified = true
         cConnector.evalText = "Evaluate Proof"
@@ -83,7 +83,6 @@ Item {
         proofModel.updateLines()
         proofModel.updateRefs(insertAt2, true)
         listView.currentIndex = insertAt2
-        proofModel.premiseCount = proofModel.premiseCount + 1
 
         fileModified = true
         cConnector.evalText = "Evaluate Proof"
@@ -196,7 +195,6 @@ Item {
                 proofModel.updateLines()
                 proofModel.updateRefs(insertIndex, true)
                 listView.currentIndex = insertIndex
-                proofModel.premiseCount = proofModel.premiseCount + 1
                 fileModified = true
                 cConnector.evalText = "Evaluate Proof"
                 proofModel.clearErrors()
@@ -233,8 +231,6 @@ Item {
                 var myType = proofModel.data(proofModel.index(myIdx, 0), 258)
 
                 if (listView.count > 1) {
-                    if (myType === "premise")
-                        proofModel.premiseCount = proofModel.premiseCount - 1
                     theData.removeLineAt(myIdx)
                     proofModel.updateLines()
                     proofModel.updateRefs(myIdx, false)
@@ -242,7 +238,6 @@ Item {
                 } else {
                     theData.removeLineAt(0)
                     theData.insertLine(0, 1, "", "premise", false, false, false, 0, [-1])
-                    proofModel.premiseCount = 1
                     proofModel.updateLines()
                     listView.currentIndex = 0
                 }
@@ -869,10 +864,6 @@ Item {
                 }
 
                 onClicked: {
-                    if (computePremise) {
-                        proofModel.recomputePremiseCount()
-                        computePremise = false
-                    }
                     optionsID.open()
                 }
 
@@ -904,7 +895,6 @@ Item {
                             listView.currentIndex = insertIndex
                             cConnector.evalText = "Evaluate Proof"
                             proofModel.clearErrors()
-                            proofModel.premiseCount = proofModel.premiseCount + 1
                         }
                     }
                     Action {
@@ -1000,9 +990,6 @@ Item {
                             proofModel.clearErrors()
 
                             if (listView.count > 1) {
-                                if (type === "premise")
-                                    proofModel.premiseCount = proofModel.premiseCount - 1
-
                                 var i = index
                                 theData.removeLineAt(index)
                                 proofModel.updateLines()
@@ -1010,7 +997,6 @@ Item {
                             } else {
                                 theData.removeLineAt(0)
                                 theData.insertLine(0, 1, "", "premise", false, false, false, 0, [-1])
-                                proofModel.premiseCount = 1
                                 proofModel.updateLines()
                                 listView.currentIndex = 0
                                 console.log("Goal 3: Last line reset to prevent blank screen crash.")

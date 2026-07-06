@@ -33,7 +33,6 @@ ApplicationWindow {
     property string filename: "Untitled"
     property bool fileExists: isExtFile
     property bool fileModified: false
-    property bool computePremise: false // set to true if Open or Import Proof are used
     property int importMode: 0
 
     //  Zoom infrastructure (Proof Line section only) 
@@ -51,8 +50,8 @@ ApplicationWindow {
     function zoomReset() { zoomFactor = 1.0 }
    
 
-    // premiseCount is now a C++ Q_PROPERTY on proofModel.
-    // Use proofModel.recomputePremiseCount() after opening/importing a file.
+    // premiseCount is a read-only C++ Q_PROPERTY on proofModel.
+    // It is automatically recomputed whenever lines are inserted or removed.
 
     // Function to check if the item is a TextField QML Type
     function isTextField(item) {
@@ -65,8 +64,6 @@ ApplicationWindow {
 
         theGoals.reset()
 
-        proofModel.premiseCount = 1
-        computePremise = false
         isExtFile = false
         fileExists = false
         fileModified = false
@@ -98,8 +95,6 @@ ApplicationWindow {
         cConnector.evalText = "Evaluate Proof"
         proofModel.clearErrors()
         isExtFile = true
-        computePremise = true
-
         importBehaviorID.close()
         menuOptions.close()
 
@@ -270,7 +265,6 @@ ApplicationWindow {
             // Called at the very start of smartPaste() — mark proof as
             // coming from an external source so the UI renders ref numbers.
             isExtFile = true
-            computePremise = true
             cConnector.evalText = "Evaluate Proof"
             proofModel.clearErrors()
         }
@@ -365,8 +359,6 @@ ApplicationWindow {
             filename = selectedFile
             isExtFile = true
             fileModified = false
-            computePremise = true
-            proofModel.recomputePremiseCount()
             // Immediately autosave the newly opened file so the autosave
             if (Qt.platform.os === "wasm")
                 cConnector.autoSave(theData, theGoals)
@@ -411,7 +403,6 @@ ApplicationWindow {
         onAccepted: {
             auxConnector.importProofWithMode(selectedFile, theData, cConnector,
                                      proofModel, importMode)
-            proofModel.recomputePremiseCount()
         }
     }
 
@@ -673,7 +664,7 @@ ApplicationWindow {
     Shortcut {
         sequences: [StandardKey.Paste]
         onActivated: {
-            // smartPasteStarted signal sets isExtFile/computePremise before rows are inserted
+            // smartPasteStarted signal sets isExtFile before rows are inserted
             cConnector.smartPaste(theData, proofModel)
         }
     }

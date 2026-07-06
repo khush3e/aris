@@ -66,7 +66,6 @@ ToolBar {
                 if (Qt.platform.os === "wasm") {
                     isExtFile = true
                     cConnector.wasmOpenProof(theData, theGoals)
-                    computePremise = true
                 } else
                     fileDialogID.open()
 

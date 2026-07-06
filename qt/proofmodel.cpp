@@ -165,16 +165,19 @@ void ProofModel::setlines(ProofData *newLines)
         });
         connect(mLines,&ProofData::postLineInsert,this,[=](){
             endInsertRows();
+            recomputePremiseCount();
         });
         connect(mLines,&ProofData::preLineRemove,this,[=](int index){
             beginRemoveRows(QModelIndex(),index,index);
         });
         connect(mLines,&ProofData::postLineRemove,this,[=](){
             endRemoveRows();
+            recomputePremiseCount();
         });
     }
 
     endResetModel();
+    recomputePremiseCount();
 }
 
 // TODO: Use model indices directly in QML, no need to update lines that way
@@ -242,7 +245,7 @@ void ProofModel::setPremiseCount(int n)
 }
 
 // Toggle a single row between "premise" and "choose".
-// Also clears the row's refs to {-1} and adjusts mPremiseCount by ±1.
+// Clears the row's refs to {-1} and recomputes premiseCount from data.
 // Returns false if the row is out of range or is a subproof/sf line.
 bool ProofModel::toggleLineType(int row)
 {
@@ -260,14 +263,14 @@ bool ProofModel::toggleLineType(int row)
         ln.pRefs = {-1};
         if (!mLines->setLineAt(row, ln)) return false;
         emit dataChanged(index(row, 0), index(row, 0), {TypeRole, RefsRole});
-        setPremiseCount(mPremiseCount - 1);
+        recomputePremiseCount();
     } else {
         // Any non-premise, non-subproof type → "premise"
         ln.pType = "premise";
         ln.pRefs = {-1};
         if (!mLines->setLineAt(row, ln)) return false;
         emit dataChanged(index(row, 0), index(row, 0), {TypeRole, RefsRole});
-        setPremiseCount(mPremiseCount + 1);
+        recomputePremiseCount();
     }
     return true;
 }
