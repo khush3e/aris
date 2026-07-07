@@ -275,6 +275,11 @@ ApplicationWindow {
             fileModified = true
             menuOptions.close()
         }
+
+        function onErrorOccurred(message) {
+            // Route file I/O errors to the footer status bar (already red).
+            cConnector.evalText = "⚠ " + message
+        }
     }
 
     

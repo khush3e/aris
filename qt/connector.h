@@ -37,12 +37,15 @@ public:
 
     Q_PROPERTY(QString evalText READ evalText WRITE setEvalText NOTIFY evalTextChanged)
     Q_PROPERTY(QString autoSaveStatus READ autoSaveStatus NOTIFY autoSaveStatusChanged)
+    Q_PROPERTY(QString lastError READ lastError NOTIFY errorOccurred)
 
     QString evalText() const;
     void setEvalText(const QString &newEvalText);
 
     QString autoSaveStatus() const;
     void setAutoSaveStatus(const QString &status);
+
+    QString lastError() const;
 
     void genIndices(const ProofData * toBeEval);
     void genProof(const ProofData * toBeEval);
@@ -75,6 +78,7 @@ signals:
 
     void evalTextChanged();
     void autoSaveStatusChanged();
+    void errorOccurred(const QString &message);
     void smartPasteStarted();
     void smartPasteDone();
 
@@ -87,6 +91,7 @@ private:
 //    QHash<int,QString> reverseRulesMap;
     QString m_evalText;
     QString m_autoSaveStatus;
+    QString m_lastError;
     QList<QList<int>> m_indices;
 };
 

@@ -154,6 +154,12 @@ void Connector::setAutoSaveStatus(const QString &status)
     emit autoSaveStatusChanged();
 }
 
+// Getter for m_lastError
+QString Connector::lastError() const
+{
+    return m_lastError;
+}
+
 /* Returns true once the IDBFS FS.syncfs(true) startup callback has fired.
   * Reads a JS flag set by main.cpp's EM_ASM block.
   * Uses EM_ASM_INT which is compiled at build time — NOT runtime eval
@@ -420,10 +426,13 @@ void Connector::saveProof(const QString &name, const ProofData *toBeSaved, const
     char *file_name = (char *) calloc((nameStr.size()+1), sizeof(char));
     memcpy(file_name, nameStr.c_str(), nameStr.size());
 
-    if (aio_save(cProof,(const char *) file_name) == 0)
+    if (aio_save(cProof,(const char *) file_name) == 0) {
         qDebug() << "File Saved Successfully";
-    else
-        qDebug() << "File Save Failed for path:" << localName;
+    } else {
+        m_lastError = tr("File save failed for path: %1").arg(localName);
+        qDebug() << m_lastError;
+        emit errorOccurred(m_lastError);
+    }
     if (file_name)
         free(file_name);
 }
@@ -450,10 +459,13 @@ void Connector::openProof(const QString &name, ProofData *openTo, GoalData *gls)
 
     releaseCProof(cProof);
     cProof = aio_open((const char *) file_name);
-    if (cProof)
+    if (cProof) {
         qDebug() << "File Opened Successfully";
-    else
-        qDebug() << "File Open Failed for path:" << localName;
+    } else {
+        m_lastError = tr("File open failed for path: %1").arg(localName);
+        qDebug() << m_lastError;
+        emit errorOccurred(m_lastError);
+    }
     if (file_name)
         free(file_name);
 
