@@ -39,7 +39,9 @@ bool ProofData::setLineAt(int index, const ProofLine &proofLine)
         && oldLine.pSub == proofLine.pSub && oldLine.pSubEnd == proofLine.pSubEnd \
         && oldLine.pSubStart == proofLine.pSubStart && oldLine.pInd == proofLine.pInd \
         && oldLine.pType == proofLine.pType && oldLine.pRefs == proofLine.pRefs \
-        && oldLine.pErrorMsg == proofLine.pErrorMsg)
+        && oldLine.pErrorMsg == proofLine.pErrorMsg \
+        && oldLine.pRuleCategory == proofLine.pRuleCategory \
+        && oldLine.pRuleIndex == proofLine.pRuleIndex)
     {
         return false;
     }
@@ -56,7 +58,7 @@ void ProofData::setFile(int index, const QString &name)
 }
 
 // Insert a proof line (in m_proofLines) at a valid index
-void ProofData::insertLine(int index,int a, QString b, QString c, bool d, bool e, bool f, int g, QList<int> h)
+void ProofData::insertLine(int index,int a, QString b, QString c, bool d, bool e, bool f, int g, QList<int> h, int cat, int idx)
 {
     emit preLineInsert(index);
 
@@ -71,6 +73,8 @@ void ProofData::insertLine(int index,int a, QString b, QString c, bool d, bool e
     aLine.pRefs = h;
     aLine.fname = NULL;
     aLine.pErrorMsg = QString();  // always start with no error
+    aLine.pRuleCategory = cat;
+    aLine.pRuleIndex = idx;
     m_proofLines.insert(index,aLine);
 
     emit postLineInsert();

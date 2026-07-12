@@ -710,26 +710,14 @@ Item {
                 onActivated: {
                     editCombos = true
                     proofModel.setData(proofModel.index(indexx, 0),
-                                       conclusionRuleID.currentText, 258)
+                                       currentIndex, 266)  // RuleCategoryRole
                     asteriskID.visible = false
                 }
 
                 model: [qsTr("Inference"), qsTr("Equivalence"), qsTr("Predicate"), qsTr("Miscellaneous"), qsTr("Boolean")]
 
-                Component.onCompleted: {
-                    if (!editCombos) {
-                        if (combo2[0].includes(type))
-                            currentIndex = 0
-                        else if (combo2[1].includes(type))
-                            currentIndex = 1
-                        else if (combo2[2].includes(type))
-                            currentIndex = 2
-                        else if (combo2[3].includes(type))
-                            currentIndex = 3
-                        else
-                            currentIndex = 4
-                    }
-                }
+                // Bind currentIndex to the locale-invariant integer from the model.
+                currentIndex: !editCombos && model.ruleCategory >= 0 ? model.ruleCategory : currentIndex
             }
 
             // Second ComboBox to select rule
@@ -769,16 +757,16 @@ Item {
 
                 onActivated: {
                     editCombos = true
+                    // Write the rule index integer (locale-invariant).
                     proofModel.setData(proofModel.index(indexx, 0),
-                                       currentText, 258)
+                                       currentIndex, 267)  // RuleIndexRole
                     asteriskID.visible = false
                 }
 
-                onModelChanged: {
-                    if (!editCombos) {
-                        currentIndex = model.indexOf(type)
-                    }
-                }
+                // Bind currentIndex to the locale-invariant integer from the model.
+                // This binding survives language changes because it reads integers,
+                // not translated strings. When editCombos is true the user is editing.
+                currentIndex: !editCombos && model.ruleIndex >= 0 ? model.ruleIndex : currentIndex
 
                 model: combo2[chooseID.currentIndex]
             }

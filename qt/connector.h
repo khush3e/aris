@@ -74,6 +74,17 @@ public:
     QHash<QString,int> rulesMap;
     QHash<int,QString> reverseRulesMap;
 
+    // Converts a C engine rule ID back to (category, index) pair used by the
+    // UI combo boxes.  Returns {-1,-1} for structural tokens (-1, -2, etc.).
+    static QPair<int,int> getCategoryAndIndex(int engineRuleId) {
+        if (engineRuleId >= 0  && engineRuleId <= 9)  return {0, engineRuleId};
+        if (engineRuleId >= 10 && engineRuleId <= 20) return {1, engineRuleId - 10};
+        if (engineRuleId >= 21 && engineRuleId <= 29) return {2, engineRuleId - 21};
+        if (engineRuleId >= 30 && engineRuleId <= 33) return {3, engineRuleId - 30};
+        if (engineRuleId >= 34 && engineRuleId <= 37) return {4, engineRuleId - 34};
+        return {-1, -1};
+    }
+
 signals:
 
     void evalTextChanged();

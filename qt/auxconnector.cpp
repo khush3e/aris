@@ -212,8 +212,11 @@ void auxConnector::importProof(const QString &name, ProofData *pd, const Connect
 
             if (sd->depth > 0)
                 sd->rule = -2;
-            pd->insertLine(num_ins,num_ins+1,(const char *) sd->text,c->reverseRulesMap[sd->rule],false,
-                               false,false, sd->depth * 20,temp_refs);
+            {
+                auto ci = Connector::getCategoryAndIndex(sd->rule);
+                pd->insertLine(num_ins,num_ins+1,(const char *) sd->text,c->reverseRulesMap[sd->rule],false,
+                                   false,false, sd->depth * 20,temp_refs, ci.first, ci.second);
+            }
             pd->setFile(num_ins,newName);
             pm->updateLines();
             pm->updateRefs(num_ins,true);
@@ -272,8 +275,11 @@ void auxConnector::importProof(const QString &name, ProofData *pd, const Connect
             for (int i = 0; sd->refs[i] != REF_END; i++)
                 temp_refs.push_back(sd->refs[i]);
 
-            pd->insertLine(l,l+1,(const char *) sd->text,c->reverseRulesMap[sd->rule],false,
-                           false,false, sd->depth * 20,temp_refs);
+            {
+                auto ci = Connector::getCategoryAndIndex(sd->rule);
+                pd->insertLine(l,l+1,(const char *) sd->text,c->reverseRulesMap[sd->rule],false,
+                               false,false, sd->depth * 20,temp_refs, ci.first, ci.second);
+            }
             pd->setFile(l,newName);
             pm->updateLines();
             pm->updateRefs(l,true);
@@ -344,7 +350,8 @@ void auxConnector::importProofWithMode(const QString &name, ProofData *pd, const
         const QList<int> refs = shiftedRefs(line.pRefs, refDelta);
 
         pd->insertLine(targetIndex, targetIndex + 1, line.pText, line.pType,
-                       line.pSub, line.pSubStart, line.pSubEnd, line.pInd, refs);
+                       line.pSub, line.pSubStart, line.pSubEnd, line.pInd, refs,
+                       line.pRuleCategory, line.pRuleIndex);
 
         if (line.fname)
             pd->setFile(targetIndex, QString::fromUtf8((const char *) line.fname));

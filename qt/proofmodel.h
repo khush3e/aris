@@ -40,7 +40,9 @@ public:
         SubEndRole,
         IndentRole,
         RefsRole,
-        ErrorRole      // carries pErrorMsg — "errMsg" in QML
+        ErrorRole,      // carries pErrorMsg — "errMsg" in QML
+        RuleCategoryRole,   // int 0-4 — locale-invariant outer combo index
+        RuleIndexRole       // int 0-N — locale-invariant inner combo index
     };
 
     // Basic functionality:
@@ -77,6 +79,12 @@ private:
     void setPremiseCount(int n);
     ProofData *mLines;
     int  mPremiseCount = 1;
+
+    static QString canonicalName(int cat, int idx);
+
+    // Returns a map from canonical English rule name -> {cat, idx}.
+    struct RulePos { int cat; int idx; };
+    static const QHash<QString, RulePos> &rulePosMap();
 };
 
 #endif // PROOFMODEL_H

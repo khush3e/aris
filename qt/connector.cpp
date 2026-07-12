@@ -264,7 +264,14 @@ void Connector::genProof(const ProofData *toBeEval)
 
 
         constexpr int RULE_UNKNOWN = -99;
-        int rule     = rulesMap.value(pl.pType, RULE_UNKNOWN);
+        int rule;
+        
+        if (pl.pRuleCategory >= 0 && pl.pRuleIndex >= 0) {
+            static const int offsets[] = {0, 10, 21, 30, 34};
+            rule = offsets[pl.pRuleCategory] + pl.pRuleIndex;
+        } else {
+            rule = rulesMap.value(pl.pType, RULE_UNKNOWN);
+        }
         int depth    = pl.pInd / 20;
         int premise  = (rule == -1 || pl.pType.isEmpty()) ? 1 : 0;
         int subproof = (rule == -2) ? 1 : 0;
@@ -494,8 +501,15 @@ void Connector::openProof(const QString &name, ProofData *openTo, GoalData *gls)
 
         if (sd->depth > d)
             sd->rule = -2;
-        openTo->insertLine(sd->line_num-1,sd->line_num,(const char *) sd->text,reverseRulesMap[sd->rule],(sd->depth > 0),
-                           (sd->rule == -2),(sd->line_num != 1 && ((sen_data *) pf_itr->prev->value)->depth > sd->depth), sd->depth * 20,temp_refs);
+        {
+            auto ci = getCategoryAndIndex(sd->rule);
+            openTo->insertLine(sd->line_num-1,sd->line_num,(const char *) sd->text,
+                               reverseRulesMap[sd->rule],(sd->depth > 0),
+                               (sd->rule == -2),
+                               (sd->line_num != 1 && ((sen_data *) pf_itr->prev->value)->depth > sd->depth),
+                               sd->depth * 20, temp_refs,
+                               ci.first, ci.second);
+        }
         d = sd->depth;
     }
 
@@ -774,7 +788,14 @@ void Connector::smartPaste(ProofData *pd, ProofModel *pm)
 
         //  Pass line (QString) directly — insertLine already takes QString.
         // The old toStdString().c_str() was UB: pointer into a temporary std::string.
-        pd->insertLine(insertIdx, insertIdx + 1, line, foundRule, false, false, false, 0, refs);
+        {
+            // Derive (cat, idx) from the rule string so the model integers are
+            // populated immediately on paste, not lazily by the combo binding.
+            int ruleId = rulesMap.value(foundRule, -1);
+            auto ci = getCategoryAndIndex(ruleId);
+            pd->insertLine(insertIdx, insertIdx + 1, line, foundRule, false, false, false, 0, refs,
+                           ci.first, ci.second);
+        }
         insertIdx++;
     }
 

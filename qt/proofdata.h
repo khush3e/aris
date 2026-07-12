@@ -31,6 +31,13 @@ struct ProofLine{
     QList<int> pRefs;
     unsigned char *fname;
     QString pErrorMsg;   // inline error text, empty = no error
+
+    // Locale-invariant combo-box position.  -1 means structural / not a rule.
+    // pRuleCategory: index into the outer combo (0=Inference, 1=Equivalence,
+    //                2=Predicate, 3=Miscellaneous, 4=Boolean).
+    // pRuleIndex   : index within combo2[pRuleCategory].
+    int pRuleCategory = -1;
+    int pRuleIndex    = -1;
 };
 
 class ProofData : public QObject
@@ -52,7 +59,7 @@ signals:
     void postLineRemove();
 
 public slots:
-    void insertLine(int index, int a, QString b, QString c, bool d, bool e, bool f, int g, QList<int> h);
+    void insertLine(int index, int a, QString b, QString c, bool d, bool e, bool f, int g, QList<int> h, int cat = -1, int idx = -1);
     void removeLineAt(int index);
     void setErrorAt(int index, const QString &msg);   // set inline error for a line
     Q_INVOKABLE void reset();

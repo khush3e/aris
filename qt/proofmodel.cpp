@@ -17,6 +17,52 @@
 */
 #include "proofmodel.h"
 
+// Static helpers — locale-invariant rule name ↔ (category, index) mapping
+
+
+// canonical rule names ordered exactly as the combo2 arrays in ProofArea.qml
+static const char * const kRuleNames[][11] = {
+    // cat 0 — Inference (10 rules)
+    {"Modus Ponens","Addition","Simplification","Conjunction",
+     "Hypothetical Syllogism","Disjunctive Syllogism","Excluded middle",
+     "Constructive Dilemma","XOR Introduction","XOR Elimination", nullptr},
+    // cat 1 — Equivalence (11 rules)
+    {"Implication","DeMorgan","Association","Commutativity","Idempotence",
+     "Distribution","Equivalence","Double Negation","Exportation",
+     "Subsumption","Contrapositive"},
+    // cat 2 — Predicate (9 rules)
+    {"Universal Generalization","Universal Instantiation",
+     "Existential Generalization","Existential Instantiation",
+     "Bound Variable Substitution","Null Quantifier","Prenex",
+     "Identity","Free Variable Substitution"},
+    // cat 3 — Miscellaneous (4 rules)
+    {"Lemma","Subproof","Sequence","Induction"},
+    // cat 4 — Boolean (4 rules)
+    {"Boolean Identity","Boolean Negation","Boolean Dominance","Symbol Negation"}
+};
+static const int kRuleCounts[] = {10, 11, 9, 4, 4};
+
+/*static*/ const QHash<QString, ProofModel::RulePos> &ProofModel::rulePosMap()
+{
+    static QHash<QString, RulePos> m;
+    if (m.isEmpty()) {
+        for (int cat = 0; cat < 5; ++cat) {
+            for (int idx = 0; idx < kRuleCounts[cat]; ++idx) {
+                m.insert(QString::fromLatin1(kRuleNames[cat][idx]), RulePos{cat, idx});
+            }
+        }
+    }
+    return m;
+}
+
+/*static*/ QString ProofModel::canonicalName(int cat, int idx)
+{
+    if (cat < 0 || cat > 4) return QString();
+    if (idx < 0 || idx >= kRuleCounts[cat]) return QString();
+    return QString::fromLatin1(kRuleNames[cat][idx]);
+}
+
+
 ProofModel::ProofModel(QObject *parent)
     : QAbstractListModel(parent), mLines(nullptr)
 {
@@ -64,6 +110,10 @@ QVariant ProofModel::data(const QModelIndex &index, int role) const
     }
     case ErrorRole:
         return QVariant(someLine.pErrorMsg);
+    case RuleCategoryRole:
+        return QVariant(someLine.pRuleCategory);
+    case RuleIndexRole:
+        return QVariant(someLine.pRuleIndex);
     }
     return QVariant();
 }
@@ -83,9 +133,21 @@ bool ProofModel::setData(const QModelIndex &index, const QVariant &value, int ro
     case TextRole:
         someLine.pText = value.toString();
         break;
-    case TypeRole:
+    case TypeRole: {
         someLine.pType = value.toString();
+        // Derive the integer combo position from the canonical English name so
+        // QML combo boxes always have a locale-invariant index to bind to.
+        auto it = rulePosMap().constFind(someLine.pType);
+        if (it != rulePosMap().constEnd()) {
+            someLine.pRuleCategory = it->cat;
+            someLine.pRuleIndex    = it->idx;
+        } else {
+            // Structural token ("premise", "sf", "subproof", "choose") or unknown.
+            someLine.pRuleCategory = -1;
+            someLine.pRuleIndex    = -1;
+        }
         break;
+    }
     case SubRole:
         someLine.pSub = value.toBool();
         break;
@@ -111,6 +173,22 @@ bool ProofModel::setData(const QModelIndex &index, const QVariant &value, int ro
         mLines->setErrorAt(index.row(), value.toString());
         emit dataChanged(index, index, {role});
         return true;
+    case RuleCategoryRole:
+        someLine.pRuleCategory = value.toInt();
+        someLine.pRuleIndex = mLines->lines().at(index.row()).pRuleIndex;
+        {
+            const QString name = canonicalName(someLine.pRuleCategory, someLine.pRuleIndex);
+            if (!name.isEmpty()) someLine.pType = name;
+        }
+        break;
+    case RuleIndexRole:
+        someLine.pRuleIndex = value.toInt();
+        someLine.pRuleCategory = mLines->lines().at(index.row()).pRuleCategory;
+        {
+            const QString name = canonicalName(someLine.pRuleCategory, someLine.pRuleIndex);
+            if (!name.isEmpty()) someLine.pType = name;
+        }
+        break;
     }
 
     if (mLines->setLineAt(index.row(),someLine)) {
@@ -141,6 +219,8 @@ QHash<int, QByteArray> ProofModel::roleNames() const
     names[IndentRole] = "ind";
     names[RefsRole] = "refs";
     names[ErrorRole] = "errMsg";
+    names[RuleCategoryRole] = "ruleCategory";
+    names[RuleIndexRole]    = "ruleIndex";
     return names;
 }
 
@@ -261,15 +341,20 @@ bool ProofModel::toggleLineType(int row)
     if (ln.pType == "premise") {
         ln.pType = "choose";
         ln.pRefs = {-1};
+        // Entering "choose" state: clear rule integers so the UI starts fresh.
+        ln.pRuleCategory = -1;
+        ln.pRuleIndex    = -1;
         if (!mLines->setLineAt(row, ln)) return false;
-        emit dataChanged(index(row, 0), index(row, 0), {TypeRole, RefsRole});
+        emit dataChanged(index(row, 0), index(row, 0), {TypeRole, RefsRole, RuleCategoryRole, RuleIndexRole});
         recomputePremiseCount();
     } else {
         // Any non-premise, non-subproof type → "premise"
         ln.pType = "premise";
         ln.pRefs = {-1};
+        ln.pRuleCategory = -1;
+        ln.pRuleIndex    = -1;
         if (!mLines->setLineAt(row, ln)) return false;
-        emit dataChanged(index(row, 0), index(row, 0), {TypeRole, RefsRole});
+        emit dataChanged(index(row, 0), index(row, 0), {TypeRole, RefsRole, RuleCategoryRole, RuleIndexRole});
         recomputePremiseCount();
     }
     return true;
