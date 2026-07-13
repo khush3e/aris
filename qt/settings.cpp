@@ -32,4 +32,5 @@ void Settings::setLanguage(const QString& languageCode)
     }
 
     m_engine->retranslate();
+    emit languageChanged();
 }

@@ -910,6 +910,7 @@ void Connector::autoLoad(ProofData *openTo, GoalData *gls)
     QFile autosaveCheck("/persistent/autosave.tle");
     if (!autosaveCheck.exists()) {
         qDebug() << "[ARIS] autoLoad: No autosave found — starting with a blank proof.";
+        emit autoLoadDone(false);
         return;
     }
 
@@ -922,10 +923,12 @@ void Connector::autoLoad(ProofData *openTo, GoalData *gls)
     if (!cProof) {
 
         qDebug() << "[ARIS] autoLoad: Autosave could not be parsed — starting with a blank proof.";
+        emit autoLoadDone(false);
         return;
     }
 
     qDebug() << "[ARIS] autoLoad: Proof restored successfully.";
+    emit autoLoadDone(true);
 #else
     Q_UNUSED(openTo)
     Q_UNUSED(gls)

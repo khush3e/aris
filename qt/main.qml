@@ -249,6 +249,7 @@ ApplicationWindow {
 
         function onImportFinished(success) {
             if (success) {
+                isExtFile = true
                 fileModified = true
                 // Immediately autosave the newly imported content so the
                 // autosave reflects what was imported, not the previous state.
@@ -260,6 +261,12 @@ ApplicationWindow {
 
     Connections {
         target: cConnector
+
+        function onAutoLoadDone(success) {
+            if (success) {
+                isExtFile = true
+            }
+        }
 
         function onSmartPasteStarted() {
             // Called at the very start of smartPaste() — mark proof as

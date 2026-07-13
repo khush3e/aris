@@ -17,6 +17,9 @@ public:
 
     Q_INVOKABLE void setLanguage(const QString& languageCode);
 
+signals:
+    void languageChanged();
+
 private:
     QGuiApplication *m_app;
     QQmlEngine *m_engine;

@@ -89,13 +89,35 @@ Item {
         proofModel.clearErrors()
     }
 
-    property var combo2: [
-        [qsTr("Modus Ponens"), qsTr("Addition"), qsTr("Simplification"), qsTr("Conjunction"), qsTr("Hypothetical Syllogism"), qsTr("Disjunctive Syllogism"), qsTr("Excluded middle"), qsTr("Constructive Dilemma"), qsTr("XOR Introduction"), qsTr("XOR Elimination")],
-        [qsTr("Implication"), qsTr("DeMorgan"), qsTr("Association"), qsTr("Commutativity"), qsTr("Idempotence"), qsTr("Distribution"), qsTr("Equivalence"), qsTr("Double Negation"), qsTr("Exportation"), qsTr("Subsumption"), qsTr("Contrapositive")],
-        [qsTr("Universal Generalization"), qsTr("Universal Instantiation"), qsTr("Existential Generalization"), qsTr("Existential Instantiation"), qsTr("Bound Variable Substitution"), qsTr("Null Quantifier"), qsTr("Prenex"), qsTr("Identity"), qsTr("Free Variable Substitution")],
-        [qsTr("Lemma"), qsTr("Subproof"), qsTr("Sequence"), qsTr("Induction")],
-        [qsTr("Identity "), qsTr("Negation"), qsTr("Dominance"), qsTr("Symbol Negation")]
-    ]
+    property var chooseCategories: getChooseCategories()
+    property var combo2: getCombo2()
+
+    function getChooseCategories() {
+        return [qsTr("Inference"), qsTr("Equivalence"), qsTr("Predicate"), qsTr("Miscellaneous"), qsTr("Boolean")]
+    }
+
+    function getCombo2() {
+        return [
+            [qsTr("Modus Ponens"), qsTr("Addition"), qsTr("Simplification"), qsTr("Conjunction"), qsTr("Hypothetical Syllogism"), qsTr("Disjunctive Syllogism"), qsTr("Excluded middle"), qsTr("Constructive Dilemma"), qsTr("XOR Introduction"), qsTr("XOR Elimination")],
+            [qsTr("Implication"), qsTr("DeMorgan"), qsTr("Association"), qsTr("Commutativity"), qsTr("Idempotence"), qsTr("Distribution"), qsTr("Equivalence"), qsTr("Double Negation"), qsTr("Exportation"), qsTr("Subsumption"), qsTr("Contrapositive")],
+            [qsTr("Universal Generalization"), qsTr("Universal Instantiation"), qsTr("Existential Generalization"), qsTr("Existential Instantiation"), qsTr("Bound Variable Substitution"), qsTr("Null Quantifier"), qsTr("Prenex"), qsTr("Identity"), qsTr("Free Variable Substitution")],
+            [qsTr("Lemma"), qsTr("Subproof"), qsTr("Sequence"), qsTr("Induction")],
+            [qsTr("Identity "), qsTr("Negation"), qsTr("Dominance"), qsTr("Symbol Negation")]
+        ]
+    }
+
+    function refreshTranslations() {
+        chooseCategories = getChooseCategories()
+        combo2 = getCombo2()
+    }
+
+    Connections {
+        target: settings
+        function onLanguageChanged() {
+            refreshTranslations()
+        }
+    }
+
     anchors.fill: parent
 
     Shortcut {
@@ -477,6 +499,7 @@ Item {
                                 proofModel.setData(proofModel.index(
                                                        listView.currentIndex,
                                                        0), array, 263)
+                                fileModified = true
                                 refreshTextFieldColor()
                                 return
                             }
@@ -485,6 +508,7 @@ Item {
                         proofModel.setData(proofModel.index(
                                                listView.currentIndex, 0),
                                            array, 263)
+                        fileModified = true
                         refreshTextFieldColor()
                     }
                 }
@@ -631,6 +655,8 @@ Item {
                     }
                 }
 
+                onTextEdited: fileModified = true
+
                 // Save Text inside Model
                 onEditingFinished: {
                     if (model.lText !== text) {
@@ -711,10 +737,11 @@ Item {
                     editCombos = true
                     proofModel.setData(proofModel.index(indexx, 0),
                                        currentIndex, 265)  // RuleCategoryRole
+                    fileModified = true
                     asteriskID.visible = false
                 }
 
-                model: [qsTr("Inference"), qsTr("Equivalence"), qsTr("Predicate"), qsTr("Miscellaneous"), qsTr("Boolean")]
+                model: chooseCategories
 
                 // Bind currentIndex to the locale-invariant integer from the model.
                 currentIndex: !editCombos && model.ruleCategory >= 0 ? model.ruleCategory : currentIndex
@@ -762,6 +789,7 @@ Item {
                     // Write the rule index integer (locale-invariant).
                     proofModel.setData(proofModel.index(indexx, 0),
                                        currentIndex, 266)  // RuleIndexRole
+                    fileModified = true
                     asteriskID.visible = false
                 }
 
@@ -826,6 +854,7 @@ Item {
                             proofModel.setData(proofModel.index(
                                                    listView.currentIndex,
                                                    0), ar, 263)
+                            fileModified = true
                             cConnector.evalText = "Evaluate Proof"
                             proofModel.clearErrors()
                         }

@@ -92,6 +92,7 @@ signals:
     void errorOccurred(const QString &message);
     void smartPasteStarted();
     void smartPasteDone();
+    void autoLoadDone(bool success);
 
 
 private:
