@@ -915,8 +915,15 @@ void Connector::autoLoad(ProofData *openTo, GoalData *gls)
 
     qDebug() << "[ARIS] autoLoad: Autosave found — restoring proof from IndexedDB...";
 
-    // Reuse the existing openProof() which calls aio_open() internally.
+    blockSignals(true);
     openProof("/persistent/autosave.tle", openTo, gls);
+    blockSignals(false);
+
+    if (!cProof) {
+
+        qDebug() << "[ARIS] autoLoad: Autosave could not be parsed — starting with a blank proof.";
+        return;
+    }
 
     qDebug() << "[ARIS] autoLoad: Proof restored successfully.";
 #else

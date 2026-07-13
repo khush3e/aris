@@ -710,7 +710,7 @@ Item {
                 onActivated: {
                     editCombos = true
                     proofModel.setData(proofModel.index(indexx, 0),
-                                       currentIndex, 266)  // RuleCategoryRole
+                                       currentIndex, 265)  // RuleCategoryRole
                     asteriskID.visible = false
                 }
 
@@ -757,9 +757,11 @@ Item {
 
                 onActivated: {
                     editCombos = true
+                    proofModel.setData(proofModel.index(indexx, 0),
+                                       chooseID.currentIndex, 265)  // RuleCategoryRole
                     // Write the rule index integer (locale-invariant).
                     proofModel.setData(proofModel.index(indexx, 0),
-                                       currentIndex, 267)  // RuleIndexRole
+                                       currentIndex, 266)  // RuleIndexRole
                     asteriskID.visible = false
                 }
 
