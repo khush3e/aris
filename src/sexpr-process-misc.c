@@ -275,7 +275,7 @@ process_misc (unsigned char * conc, vec_t * prems, const char * rule, vec_t * va
     if (!strcmp (rule, "sp"))
     {
         if (prems->num_stuff < 2)
-            return _("Subproof requires a subproof as a reference.");
+            return _("Subproof Error: The rule 'sp' requires a subproof line as a reference.");
 
         unsigned char * prem_0, * prem_1;
 
@@ -350,7 +350,7 @@ proc_lm (vec_t * prems, unsigned char * conc, proof_t * proof)
     if (num_pf_refs != prems->num_stuff)
     {
         destroy_str_vec (pf_sens);
-        return _("Lemma requires the same amount of references as the amount of premises in the proof.");
+        return _("Lemma Error: The number of references provided must exactly match the number of premises required by the lemma.");
     }
 
     for (itr = proof->goals->head; itr; itr = itr->next)
@@ -393,7 +393,7 @@ proc_lm (vec_t * prems, unsigned char * conc, proof_t * proof)
 
         if (!ret_chk)
             return CORRECT;
-        return _("Incorrect usage of lemma.");
+        return _("Lemma Error: The referenced lemma does not match the premises or conclusion required by this line.");
     }
 
     int valid, cur_len, pf_len;
@@ -500,7 +500,7 @@ proc_sp (unsigned char * prem_0, unsigned char * prem_1, unsigned char * conc)
     free (rsen);
 
     if (!cmp_0 || !cmp_1)
-        return _("The premise of the subproof must be the antecedent, and the conclusion must be the consequence.");
+        return _("Subproof Error: The premise of the subproof must match the conditional's antecedent, and the subproof conclusion must match the consequence.");
 
     return CORRECT;
 }
@@ -781,5 +781,5 @@ proc_in (unsigned char * prem_0, unsigned char * prem_1, unsigned char * conc, v
 
     if (chk)
         return CORRECT;
-    return _("Induction constructed incorrectly.");
+    return _("Induction Error: The base case or inductive step does not match the universal conclusion.");
 }

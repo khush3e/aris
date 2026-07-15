@@ -114,7 +114,7 @@ process_quantifiers (unsigned char * conc, vec_t * prems, const char * rule, vec
     if (!strcmp (rule, "ug"))
     {
         if (prems->num_stuff != 1)
-            return _("Universal Generalization requires one (1) references.");
+            return _("Universal Generalization requires exactly one (1) reference.");
 
         ret = proc_ug (prem, conc, vars);
         if (!ret)
@@ -124,7 +124,7 @@ process_quantifiers (unsigned char * conc, vec_t * prems, const char * rule, vec
     if (!strcmp (rule, "ui"))
     {
         if (prems->num_stuff != 1)
-            return _("Universal Instantiation requires one (1) reference.");
+            return _("Universal Instantiation requires exactly one (1) reference.");
 
         ret = proc_ui (prem, conc);
         if (!ret)
@@ -134,7 +134,7 @@ process_quantifiers (unsigned char * conc, vec_t * prems, const char * rule, vec
     if (!strcmp (rule, "eg"))
     {
         if (prems->num_stuff != 1)
-            return _("Existential Generalization requires one (1) reference.");
+            return _("Existential Generalization requires exactly one (1) reference.");
 
         ret = proc_eg (prem, conc);
         if (!ret)
@@ -144,7 +144,7 @@ process_quantifiers (unsigned char * conc, vec_t * prems, const char * rule, vec
     if (!strcmp (rule, "ei"))
     {
         if (prems->num_stuff != 1)
-            return _("Existential Instantiation requires one (1) references.");
+            return _("Existential Instantiation requires exactly one (1) reference.");
 
         ret = proc_ei (prem, conc, vars);
         if (!ret)
@@ -194,7 +194,7 @@ process_quantifiers (unsigned char * conc, vec_t * prems, const char * rule, vec
     if (!strcmp (rule, "fv"))
     {
         if (prems->num_stuff != 2)
-            return _("Free Variable requires one two (2) references.");
+            return _("Free Variable Substitution requires one or two (1 or 2) references.");
 
         unsigned char * prem_0;
         prem_0 = vec_str_nth (prems, 1);
@@ -219,7 +219,7 @@ proc_ug (unsigned char * prem, unsigned char * conc, vec_t * vars)
     if (ret_chk == 0)
         return CORRECT;
     else if (ret_chk == -3)
-        return _("The variable must be arbitrary.");
+        return _("Universal Generalization Error: The generalized variable must be arbitrary (not introduced by Existential Instantiation or unclosed assumptions).");
     else
         return _("Universal Generalization constructed incorrectly.");
 }
@@ -263,7 +263,7 @@ proc_ei (unsigned char * prem, unsigned char * conc, vec_t * vars)
     if (ret_chk == 0)
         return CORRECT;
     else if (ret_chk == -3)
-        return _("The variable must not have been used.");
+        return _("Existential Instantiation Error: The instantiated variable must be completely new and not previously used in the proof.");
     else
         return _("Existential Instantiation constructed incorrectly.");
 }

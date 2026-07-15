@@ -110,8 +110,10 @@ void auxConnector::latex(const QString &name, const ProofData *toBeEval, Connect
     if (convert_proof_latex(c->getCProof(),file_name) == 0){
         qDebug() << "Latex conversion successful";
     }
-    else
+    else {
         qDebug() << "Memory Error";
+        emit errorOccurred(tr("LaTeX export failed: could not convert proof to LaTeX format."));
+    }
     if (file_name)
         free(file_name);
 
@@ -153,6 +155,7 @@ void auxConnector::importProof(const QString &name, ProofData *pd, const Connect
 
     if (!proof) {
         qDebug() << "Failed to import proof";
+        emit errorOccurred(tr("Import failed: the selected file could not be opened or is not a valid Aris proof."));
         free(file_name);
         emit importFinished(false);
         return;

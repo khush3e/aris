@@ -999,8 +999,8 @@ check_generalities (unsigned char * text)
             if (ret_chk == AEC_MEM)
                 return AEC_MEM;
 
-            if (ret_chk == -2)
-                return -5;
+            if (ret_chk == -2 || ret_chk < -5)
+                return ret_chk == -2 ? -5 : ret_chk;
 
             return 0;
         }
@@ -1029,8 +1029,8 @@ check_generalities (unsigned char * text)
         if (ret_chk == AEC_MEM)
             return AEC_MEM;
 
-        if (ret_chk == -2)
-            return -5;
+        if (ret_chk == -2 || ret_chk < -5)
+            return ret_chk == -2 ? -5 : ret_chk;
 
         return 0;
     }
@@ -1045,9 +1045,9 @@ check_generalities (unsigned char * text)
     {
         if (!strcmp (conn, CON) || !strcmp (conn, BIC) || !strcmp (conn, XOR))
         {
-            // Connective Error.
+            // Connective Error: Ambiguous non-associative chaining
             destroy_str_vec (gens);
-            return -3;
+            return -9;
         }
     }
 
@@ -1101,12 +1101,12 @@ check_symbols (unsigned char * in_str, int pred)
             return 0;
 
         if (!isupper (in_str[0]))
-            return -2;
+            return -6;
     }
     else
     {
         if (!islower (in_str[0]) && !isdigit (in_str[0]))
-            return -2;
+            return -7;
     }
 
     int pos = 1;
@@ -1114,7 +1114,7 @@ check_symbols (unsigned char * in_str, int pred)
     while (in_str[pos] != '(' && in_str[pos] != '\0')
     {
         if (!ISLEGIT (in_str[pos]))
-            return -2;
+            return -8;
 
         pos++;
     }
@@ -1125,7 +1125,7 @@ check_symbols (unsigned char * in_str, int pred)
     pos++;
 
     if (in_str[pos] == ')')
-        return -2;
+        return -8;
 
     int cur_pos;
 
@@ -1178,8 +1178,8 @@ check_symbols (unsigned char * in_str, int pred)
                     return AEC_MEM;
 
                 free (tmp_str);
-                if (ret_chk == -2)
-                    return -2;
+                if (ret_chk < 0)
+                    return ret_chk;
                 done = 1;
                 if (in_str[cur_pos] == ',')
                     cur_pos++;

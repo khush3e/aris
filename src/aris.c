@@ -242,6 +242,22 @@ there are invalid quantifiers in the string - '%s'\n", arg_text);
       fprintf (stderr, "Text Error - \
 there are syntactical errors in the string - '%s'\n", arg_text);
       return 0;
+    case -6:
+      fprintf (stderr, "Text Error - \
+predicate names must start with an uppercase letter in the string - '%s'\n", arg_text);
+      return 0;
+    case -7:
+      fprintf (stderr, "Text Error - \
+term/variable names must start with a lowercase letter in the string - '%s'\n", arg_text);
+      return 0;
+    case -8:
+      fprintf (stderr, "Text Error - \
+invalid symbol characters or empty argument list in the string - '%s'\n", arg_text);
+      return 0;
+    case -9:
+      fprintf (stderr, "Text Error - \
+ambiguous chaining of ->, <->, or XOR without parentheses in the string - '%s'\n", arg_text);
+      return 0;
     }
 
   return 1;

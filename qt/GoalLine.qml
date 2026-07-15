@@ -130,8 +130,10 @@ RowLayout {
                     if (goalDataID.rowCount() > 1) {
                         theGoals.removegLineAt(index)
                         fileModified = true
-                    } else
+                    } else {
                         console.log("Invalid Operation: Cannot remove all Lines")
+                        cConnector.evalText = "⚠ " + qsTr("Invalid Operation: At least one goal line must remain.")
+                    }
                 }
             }
         }

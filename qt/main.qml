@@ -255,7 +255,15 @@ ApplicationWindow {
                 // autosave reflects what was imported, not the previous state.
                 if (Qt.platform.os === "wasm")
                     cConnector.autoSave(theData, theGoals)
+            } else {
+                // No-op: Error already set by errorOccurred, or user cancelled dialog.
             }
+        }
+
+        function onErrorOccurred(message) {
+            // Route auxConnector errors (LaTeX export, import parse) to the
+            // same footer status bar used by cConnector errors.
+            cConnector.evalText = "⚠ " + message
         }
     }
 

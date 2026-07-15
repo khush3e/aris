@@ -440,6 +440,18 @@ Item {
                 listView.currentIndex = temp
             }
 
+            // Restore stored integer role values when language change resets combobox models.
+            Connections {
+                target: settings
+                function onLanguageChanged() {
+                    if (model.ruleCategory >= 0)
+                        chooseID.currentIndex = model.ruleCategory
+                    if (model.ruleIndex >= 0)
+                        conclusionRuleID.currentIndex = model.ruleIndex
+                }
+            }
+
+
             RowLayout {
                 id: root_delegate
                 spacing: scaledSpacing
@@ -469,24 +481,28 @@ Item {
 
                 // Add this button's line to the current line's references
                 onClicked: {
-                    if (listView.currentIndex <= index)
+                    if (listView.currentIndex <= index) {
                         console.log("Invalid Operation : Can only reference to smaller line numbers")
-                    else if (proofModel.data(proofModel.index(
+                        cConnector.evalText = "⚠ " + qsTr("Invalid Operation: A proof line can only reference earlier line numbers.")
+                    } else if (proofModel.data(proofModel.index(
                                                  listView.currentIndex, 0),
-                                             257) === "premise")
+                                             257) === "premise") {
                         console.log("Invalid Operation: Current Line is a premise")
-                    else if (proofModel.data(proofModel.index(
+                        cConnector.evalText = "⚠ " + qsTr("Invalid Operation: Cannot assign inference rules or references to a premise.")
+                    } else if (proofModel.data(proofModel.index(
                                                  listView.currentIndex, 0),
-                                             260) === true)
+                                             260) === true) {
                         //|| proofModel.data(proofModel.index(listView.currentIndex,0),261) === true)
                         console.log("Invalid Operation: Subproof beginning")
-                    else if (proofModel.data(
+                        cConnector.evalText = "⚠ " + qsTr("Invalid Operation: Cannot modify or reference the start line of a subproof directly.")
+                    } else if (proofModel.data(
                                  proofModel.index(listView.currentIndex, 0),
                                  262) < model.ind && proofModel.data(
                                  proofModel.index(listView.currentIndex, 0),
-                                 261) === false)
+                                 261) === false) {
                         console.log("Invalid Operation: Invalid reference to subproof")
-                    else {
+                        cConnector.evalText = "⚠ " + qsTr("Invalid Operation: Cannot reference lines across closed subproof boundaries.")
+                    } else {
                         cConnector.evalText = "Evaluate Proof"
                             proofModel.clearErrors()
                         var array = Array.from(proofModel.data(
@@ -743,8 +759,8 @@ Item {
 
                 model: chooseCategories
 
-                // Bind currentIndex to the locale-invariant integer from the model.
-                currentIndex: !editCombos && model.ruleCategory >= 0 ? model.ruleCategory : currentIndex
+                // Bind to locale-invariant integer role from ProofModel.
+                currentIndex: model.ruleCategory >= 0 ? model.ruleCategory : currentIndex
             }
 
             // Second ComboBox to select rule
@@ -793,10 +809,8 @@ Item {
                     asteriskID.visible = false
                 }
 
-                // Bind currentIndex to the locale-invariant integer from the model.
-                // This binding survives language changes because it reads integers,
-                // not translated strings. When editCombos is true the user is editing.
-                currentIndex: !editCombos && model.ruleIndex >= 0 ? model.ruleIndex : currentIndex
+                // Bind to locale-invariant integer role from ProofModel.
+                currentIndex: model.ruleIndex >= 0 ? model.ruleIndex : currentIndex
 
                 model: combo2[chooseID.currentIndex]
             }

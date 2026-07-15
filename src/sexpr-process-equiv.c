@@ -372,7 +372,7 @@ proc_im (unsigned char * prem, unsigned char * conc)
     // Only occurs if there is no top connective on one, or a quantifier.
 
     if (i < 2)
-        return _("Implication constructed incorrectly.");
+        return _("Implication Error: Expected equivalence between a conditional (P -> Q) and a disjunction (~P v Q).");
 
     int tmp_pos;
     unsigned char * tmp_str;
@@ -381,7 +381,7 @@ proc_im (unsigned char * prem, unsigned char * conc)
     if (tmp_pos == AEC_MEM)
         return NULL;
     if (!tmp_str)
-        return _("Implication constructed incorrectly.");
+        return _("Implication Error: Expected equivalence between a conditional (P -> Q) and a disjunction (~P v Q).");
 
     int ftc;
     unsigned char * lsen, * rsen, * n_lsen;
@@ -435,7 +435,7 @@ proc_im (unsigned char * prem, unsigned char * conc)
     if (ret_str == NO_DIFFERENCE || ret_str == CORRECT)
         return CORRECT;
 
-    return _("Implication constructed incorrectly.");
+    return _("Implication Error: Expected equivalence between a conditional (P -> Q) and a disjunction (~P v Q).");
 }
 
 char *
@@ -470,7 +470,7 @@ proc_dm (unsigned char * prem, unsigned char * conc, int mode_guess)
         int n_len;
 
         if (i == 0)
-            return _("DeMorgan constructed incorrectly.");
+            return _("DeMorgan Error: Expected equivalence when distributing negation across conjunction or disjunction.");
 
         if (!strncmp (prem + i - 1, S_NOT, S_NL))
         {
@@ -496,7 +496,7 @@ proc_dm (unsigned char * prem, unsigned char * conc, int mode_guess)
         if (tmp_pos == AEC_MEM)
             return NULL;
         if (!tmp_str)
-            return _("DeMorgan constructed incorrectly.");
+            return _("DeMorgan Error: Expected equivalence when distributing negation across conjunction or disjunction.");
 
         unsigned char * elim_sen;
 
@@ -522,7 +522,7 @@ proc_dm (unsigned char * prem, unsigned char * conc, int mode_guess)
         if (gg == 1)
         {
             destroy_str_vec (gg_vec);
-            return _("There must be generalities on the negation sentence.");
+            return _("DeMorgan Quantifier Error: Expected a quantifier on the negated statement.");
         }
 
         if (strcmp (conn, S_AND) && strcmp (conn, S_OR))
@@ -984,7 +984,7 @@ proc_dt (unsigned char * prem, unsigned char * conc, int mode_guess)
             && (strcmp (quant, S_EXL) || strcmp (conn, S_OR)))
         {
             destroy_str_vec (gg_vec);
-            return _("A universal is distributed over a conjnction, and an existential is distributed over a disjunction.");
+            return _("Distribution Error: A universal quantifier is distributed over a conjunction, and an existential quantifier is distributed over a disjunction.");
         }
 
         unsigned char * oth_sen;
