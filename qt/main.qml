@@ -21,6 +21,7 @@ import QtQuick.Window 2.15
 import QtQuick.Layouts 1.3
 import QtQuick.Controls 2.5
 import QtQuick.Dialogs
+import Qt.labs.settings 1.0
 import proof.model 1.0
 import goal.model 1.0
 
@@ -29,17 +30,30 @@ ApplicationWindow {
 
     property font thefont: rootID.font
     property bool isExtFile: false // If the file is opened from an external file
-    property bool darkMode: false
+    property bool darkMode: appPrefs.darkMode
     property string filename: "Untitled"
     property bool fileExists: isExtFile
     property bool fileModified: false
     property int importMode: 0
 
-    //  Zoom infrastructure (Proof Line section only) 
-    property real zoomFactor: 1.0          // single source of truth
+    //  Zoom infrastructure (Proof Line section only)
+    property real zoomFactor: appPrefs.zoomFactor
     readonly property real zoomMin:  0.3
     readonly property real zoomMax:  2.0
     readonly property real zoomStep: 0.1
+
+    // Persist user preferences across reloads (localStorage on WASM, QSettings on desktop).
+    Settings {
+        id: appPrefs
+        category: "ArisPreferences"
+        property string language: "en"
+        property bool   darkMode: false
+        property real   zoomFactor: 1.0
+    }
+
+    // Keep persisted prefs in sync whenever the user changes them at runtime.
+    onDarkModeChanged:  appPrefs.darkMode   = darkMode
+    onZoomFactorChanged: appPrefs.zoomFactor = zoomFactor
 
     // Convenience helpers consumed by ProofArea.qml
     readonly property real scaledFontSize: Math.round(thefont.pointSize * zoomFactor)
@@ -185,6 +199,9 @@ ApplicationWindow {
 
     Component.onCompleted: () => {
         qsTr("QT_LAYOUT_DIRECTION", "QGuiApplication");
+        // Restore language preference saved from the previous session.
+        if (appPrefs.language !== "en")
+            settings.setLanguage(appPrefs.language)
     }
 
     onClosing: function(close) {

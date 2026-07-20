@@ -118,7 +118,7 @@ void Connector::reverseMapInit()
     reverseRulesMap[21] = "Universal Generalization";       reverseRulesMap[22] = "Universal Instantiation";
     reverseRulesMap[23] = "Existential Generalization";     reverseRulesMap[24] = "Existential Instantiation";      reverseRulesMap[25] = "Bound Variable Substitution";
     reverseRulesMap[26] = "Null Quantifier";                reverseRulesMap[27] = "Prenex";                         reverseRulesMap[28] = "Identity";
-    reverseRulesMap[29] = "Free Variable Substitution";     reverseRulesMap[30] = "Lemma";                          reverseRulesMap[31] = "subproof";
+    reverseRulesMap[29] = "Free Variable Substitution";     reverseRulesMap[30] = "Lemma";                          reverseRulesMap[31] = "Subproof";
     reverseRulesMap[32] = "Sequence";                       reverseRulesMap[33] = "Induction";                      reverseRulesMap[34] = "Boolean Identity";
     reverseRulesMap[35] = "Boolean Negation";               reverseRulesMap[36] = "Boolean Dominance";              reverseRulesMap[37] = "Symbol Negation";
     reverseRulesMap[-2] = "sf";
@@ -244,7 +244,7 @@ void Connector::genProof(const ProofData *toBeEval)
 {
     m_conns = gui_conns;
     int conn = 1;
-    std::regex pat("[&|~$%@#!^:>]");
+    std::regex pat("[&|~$%@#!?^:>]");
  
     releaseCProof(cProof);
     cProof = proof_init();
@@ -499,17 +499,17 @@ void Connector::openProof(const QString &name, ProofData *openTo, GoalData *gls)
         for (int i = 0; sd->refs[i] != REF_END; i++)
             temp_refs.push_back(sd->refs[i]);
 
+        int effectiveRule = sd->rule;
         if (sd->depth > d)
-            sd->rule = -2;
-        {
-            auto ci = getCategoryAndIndex(sd->rule);
-            openTo->insertLine(sd->line_num-1,sd->line_num,(const char *) sd->text,
-                               reverseRulesMap[sd->rule],(sd->depth > 0),
-                               (sd->rule == -2),
-                               (sd->line_num != 1 && ((sen_data *) pf_itr->prev->value)->depth > sd->depth),
-                               sd->depth * 20, temp_refs,
-                               ci.first, ci.second);
-        }
+            effectiveRule = -2;  // subproof start — don't mutate sd->rule itself
+
+        auto ci = getCategoryAndIndex(effectiveRule);
+        openTo->insertLine(sd->line_num-1, sd->line_num, (const char *) sd->text,
+                           reverseRulesMap[effectiveRule], (sd->depth > 0),
+                           (effectiveRule == -2),
+                           (sd->line_num != 1 && ((sen_data *) pf_itr->prev->value)->depth > sd->depth),
+                           sd->depth * 20, temp_refs,
+                           ci.first, ci.second);
         d = sd->depth;
     }
 

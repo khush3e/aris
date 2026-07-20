@@ -422,6 +422,11 @@ Item {
             property int indexx: model.index
             property bool vis: type === "premise" || type === "subproof"
                                || type === "sf"
+            // These delegate-level ints mirror the ProofModel roles.
+            // They must live here (not inside a ComboBox) because inside a ComboBox,
+            // `model` refers to the combo's own string-array model, NOT the row data.
+            property int savedRuleCategory: model.ruleCategory
+            property int savedRuleIndex:    model.ruleIndex
             property string textFieldColor: {
                 if (rootProofArea.selectedIndices.includes(indexx)) {
                     return darkMode ? "#5C469C" : "#E6E6FA"
@@ -444,10 +449,10 @@ Item {
             Connections {
                 target: settings
                 function onLanguageChanged() {
-                    if (model.ruleCategory >= 0)
-                        chooseID.currentIndex = model.ruleCategory
-                    if (model.ruleIndex >= 0)
-                        conclusionRuleID.currentIndex = model.ruleIndex
+                    if (outerColumn.savedRuleCategory >= 0)
+                        chooseID.currentIndex = outerColumn.savedRuleCategory
+                    if (outerColumn.savedRuleIndex >= 0)
+                        conclusionRuleID.currentIndex = outerColumn.savedRuleIndex
                 }
             }
 
@@ -759,8 +764,9 @@ Item {
 
                 model: chooseCategories
 
-                // Bind to locale-invariant integer role from ProofModel.
-                currentIndex: model.ruleCategory >= 0 ? model.ruleCategory : currentIndex
+                // Use delegate-level savedRuleCategory (not `model.ruleCategory` here,
+                // because inside a ComboBox `model` shadows the row data).
+                currentIndex: outerColumn.savedRuleCategory >= 0 ? outerColumn.savedRuleCategory : currentIndex
             }
 
             // Second ComboBox to select rule
@@ -809,10 +815,26 @@ Item {
                     asteriskID.visible = false
                 }
 
-                // Bind to locale-invariant integer role from ProofModel.
-                currentIndex: model.ruleIndex >= 0 ? model.ruleIndex : currentIndex
-
+                // DO NOT use a declarative `currentIndex:` binding here.
+                // When chooseID.currentIndex changes, combo2[cat] changes,
+                // which causes QML to reset currentIndex internally — destroying
+                // any declarative binding. Instead we use onModelChanged to
+                // re-apply the saved ruleIndex after the model swap settles.
                 model: combo2[chooseID.currentIndex]
+
+                Component.onCompleted: {
+                    // `model` here is the combo's string array — use outerColumn.savedRuleIndex.
+                    if (outerColumn.savedRuleIndex >= 0)
+                        currentIndex = outerColumn.savedRuleIndex
+                }
+
+                onModelChanged: {
+                    // Fires when chooseID.currentIndex changes (during load or user action).
+                    if (!editCombos && outerColumn.savedRuleIndex >= 0)
+                        currentIndex = outerColumn.savedRuleIndex   // restore on load
+                    else if (editCombos)
+                        currentIndex = 0   // user picked a new category → start at rule 0
+                }
             }
 
             // Display Asterisk next to ComboBox if rule not chosen

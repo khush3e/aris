@@ -192,7 +192,11 @@ bool ProofModel::setData(const QModelIndex &index, const QVariant &value, int ro
     }
 
     if (mLines->setLineAt(index.row(),someLine)) {
-        emit dataChanged(index, index, {role});
+        if (role == TypeRole || role == RuleCategoryRole || role == RuleIndexRole) {
+            emit dataChanged(index, index, {TypeRole, RuleCategoryRole, RuleIndexRole});
+        } else {
+            emit dataChanged(index, index, {role});
+        }
         return true;
     }
     return false;

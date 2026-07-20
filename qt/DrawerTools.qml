@@ -295,23 +295,23 @@ ToolBar {
 
                 MenuItem {
                     text: "English"
-                    onTriggered: settings.setLanguage("en")
+                    onTriggered: { settings.setLanguage("en"); appPrefs.language = "en" }
                 }
                 MenuItem {
                     text: "العربية"
-                    onTriggered: settings.setLanguage("ar")
+                    onTriggered: { settings.setLanguage("ar"); appPrefs.language = "ar" }
                 }
                 MenuItem {
                     text: "Deutsch"
-                    onTriggered: settings.setLanguage("de")
+                    onTriggered: { settings.setLanguage("de"); appPrefs.language = "de" }
                 }
                 MenuItem {
                     text: "Français"
-                    onTriggered: settings.setLanguage("fr")
+                    onTriggered: { settings.setLanguage("fr"); appPrefs.language = "fr" }
                 }
                 MenuItem {
                     text: "Magyar"
-                    onTriggered: settings.setLanguage("hu")
+                    onTriggered: { settings.setLanguage("hu"); appPrefs.language = "hu" }
                 }
             }
         }
