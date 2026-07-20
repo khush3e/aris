@@ -118,7 +118,7 @@ void Connector::reverseMapInit()
     reverseRulesMap[21] = "Universal Generalization";       reverseRulesMap[22] = "Universal Instantiation";
     reverseRulesMap[23] = "Existential Generalization";     reverseRulesMap[24] = "Existential Instantiation";      reverseRulesMap[25] = "Bound Variable Substitution";
     reverseRulesMap[26] = "Null Quantifier";                reverseRulesMap[27] = "Prenex";                         reverseRulesMap[28] = "Identity";
-    reverseRulesMap[29] = "Free Variable Substitution";     reverseRulesMap[30] = "Lemma";                          reverseRulesMap[31] = "subproof";
+    reverseRulesMap[29] = "Free Variable Substitution";     reverseRulesMap[30] = "Lemma";                          reverseRulesMap[31] = "Subproof";
     reverseRulesMap[32] = "Sequence";                       reverseRulesMap[33] = "Induction";                      reverseRulesMap[34] = "Boolean Identity";
     reverseRulesMap[35] = "Boolean Negation";               reverseRulesMap[36] = "Boolean Dominance";              reverseRulesMap[37] = "Symbol Negation";
     reverseRulesMap[-2] = "sf";
@@ -152,6 +152,12 @@ void Connector::setAutoSaveStatus(const QString &status)
         return;
     m_autoSaveStatus = status;
     emit autoSaveStatusChanged();
+}
+
+// Getter for m_lastError
+QString Connector::lastError() const
+{
+    return m_lastError;
 }
 
 /* Returns true once the IDBFS FS.syncfs(true) startup callback has fired.
@@ -236,9 +242,9 @@ void Connector::genIndices(const ProofData *toBeEval)
  */
 void Connector::genProof(const ProofData *toBeEval)
 {
-    main_conns = gui_conns;
+    m_conns = gui_conns;
     int conn = 1;
-    std::regex pat("[&|~$%@#!^:>]");
+    std::regex pat("[&|~$%@#!?^:>]");
  
     releaseCProof(cProof);
     cProof = proof_init();
@@ -258,7 +264,14 @@ void Connector::genProof(const ProofData *toBeEval)
 
 
         constexpr int RULE_UNKNOWN = -99;
-        int rule     = rulesMap.value(pl.pType, RULE_UNKNOWN);
+        int rule;
+        
+        if (pl.pRuleCategory >= 0 && pl.pRuleIndex >= 0) {
+            static const int offsets[] = {0, 10, 21, 30, 34};
+            rule = offsets[pl.pRuleCategory] + pl.pRuleIndex;
+        } else {
+            rule = rulesMap.value(pl.pType, RULE_UNKNOWN);
+        }
         int depth    = pl.pInd / 20;
         int premise  = (rule == -1 || pl.pType.isEmpty()) ? 1 : 0;
         int subproof = (rule == -2) ? 1 : 0;
@@ -278,7 +291,7 @@ void Connector::genProof(const ProofData *toBeEval)
         std::string str = pl.pText.toStdString();
 
         if (conn && std::regex_search(str, pat)) {
-            main_conns = cli_conns;
+            m_conns = cli_conns;
             conn = 0;
         }
 
@@ -354,7 +367,7 @@ int Connector::evalProof(const ProofData *toBeEval, const GoalData *gls, ProofMo
         destroy_str_vec(returns);
     returns = init_vec(sizeof(char *));
 
-    if (!proof_eval(cProof, returns, 1))
+    if (!proof_eval(cProof, returns, 1, m_conns))
         qDebug() << "Proof Evaluated Successfully";
     else
         qDebug() << "Memory Error";
@@ -420,10 +433,13 @@ void Connector::saveProof(const QString &name, const ProofData *toBeSaved, const
     char *file_name = (char *) calloc((nameStr.size()+1), sizeof(char));
     memcpy(file_name, nameStr.c_str(), nameStr.size());
 
-    if (aio_save(cProof,(const char *) file_name) == 0)
+    if (aio_save(cProof,(const char *) file_name) == 0) {
         qDebug() << "File Saved Successfully";
-    else
-        qDebug() << "File Save Failed for path:" << localName;
+    } else {
+        m_lastError = tr("File save failed for path: %1").arg(localName);
+        qDebug() << m_lastError;
+        emit errorOccurred(m_lastError);
+    }
     if (file_name)
         free(file_name);
 }
@@ -450,10 +466,13 @@ void Connector::openProof(const QString &name, ProofData *openTo, GoalData *gls)
 
     releaseCProof(cProof);
     cProof = aio_open((const char *) file_name);
-    if (cProof)
+    if (cProof) {
         qDebug() << "File Opened Successfully";
-    else
-        qDebug() << "File Open Failed for path:" << localName;
+    } else {
+        m_lastError = tr("File open failed for path: %1").arg(localName);
+        qDebug() << m_lastError;
+        emit errorOccurred(m_lastError);
+    }
     if (file_name)
         free(file_name);
 
@@ -480,10 +499,17 @@ void Connector::openProof(const QString &name, ProofData *openTo, GoalData *gls)
         for (int i = 0; sd->refs[i] != REF_END; i++)
             temp_refs.push_back(sd->refs[i]);
 
+        int effectiveRule = sd->rule;
         if (sd->depth > d)
-            sd->rule = -2;
-        openTo->insertLine(sd->line_num-1,sd->line_num,(const char *) sd->text,reverseRulesMap[sd->rule],(sd->depth > 0),
-                           (sd->rule == -2),(sd->line_num != 1 && ((sen_data *) pf_itr->prev->value)->depth > sd->depth), sd->depth * 20,temp_refs);
+            effectiveRule = -2;  // subproof start — don't mutate sd->rule itself
+
+        auto ci = getCategoryAndIndex(effectiveRule);
+        openTo->insertLine(sd->line_num-1, sd->line_num, (const char *) sd->text,
+                           reverseRulesMap[effectiveRule], (sd->depth > 0),
+                           (effectiveRule == -2),
+                           (sd->line_num != 1 && ((sen_data *) pf_itr->prev->value)->depth > sd->depth),
+                           sd->depth * 20, temp_refs,
+                           ci.first, ci.second);
         d = sd->depth;
     }
 
@@ -762,7 +788,14 @@ void Connector::smartPaste(ProofData *pd, ProofModel *pm)
 
         //  Pass line (QString) directly — insertLine already takes QString.
         // The old toStdString().c_str() was UB: pointer into a temporary std::string.
-        pd->insertLine(insertIdx, insertIdx + 1, line, foundRule, false, false, false, 0, refs);
+        {
+            // Derive (cat, idx) from the rule string so the model integers are
+            // populated immediately on paste, not lazily by the combo binding.
+            int ruleId = rulesMap.value(foundRule, -1);
+            auto ci = getCategoryAndIndex(ruleId);
+            pd->insertLine(insertIdx, insertIdx + 1, line, foundRule, false, false, false, 0, refs,
+                           ci.first, ci.second);
+        }
         insertIdx++;
     }
 
@@ -877,15 +910,25 @@ void Connector::autoLoad(ProofData *openTo, GoalData *gls)
     QFile autosaveCheck("/persistent/autosave.tle");
     if (!autosaveCheck.exists()) {
         qDebug() << "[ARIS] autoLoad: No autosave found — starting with a blank proof.";
+        emit autoLoadDone(false);
         return;
     }
 
     qDebug() << "[ARIS] autoLoad: Autosave found — restoring proof from IndexedDB...";
 
-    // Reuse the existing openProof() which calls aio_open() internally.
+    blockSignals(true);
     openProof("/persistent/autosave.tle", openTo, gls);
+    blockSignals(false);
+
+    if (!cProof) {
+
+        qDebug() << "[ARIS] autoLoad: Autosave could not be parsed — starting with a blank proof.";
+        emit autoLoadDone(false);
+        return;
+    }
 
     qDebug() << "[ARIS] autoLoad: Proof restored successfully.";
+    emit autoLoadDone(true);
 #else
     Q_UNUSED(openTo)
     Q_UNUSED(gls)

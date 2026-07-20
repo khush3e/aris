@@ -54,14 +54,14 @@ Item {
         proofModel.updateLines()
         proofModel.updateRefs(myIdx, false)
 
-        // After removal the boundary shifts to premiseCount - 1.
-        var insertAt = proofModel.premiseCount - 1
+        // After removal, recomputePremiseCount has already fired and premiseCount
+        // is now P-1. The insert boundary (first conclusion slot) is exactly premiseCount.
+        var insertAt = proofModel.premiseCount
         theData.insertLine(insertAt, insertAt + 1, pText, "choose",
                            pSub, pSubSt, pSubEnd, pInd, [-1])
         proofModel.updateLines()
         proofModel.updateRefs(insertAt, true)
         listView.currentIndex = insertAt
-        proofModel.premiseCount = proofModel.premiseCount - 1
 
         fileModified = true
         cConnector.evalText = "Evaluate Proof"
@@ -83,20 +83,41 @@ Item {
         proofModel.updateLines()
         proofModel.updateRefs(insertAt2, true)
         listView.currentIndex = insertAt2
-        proofModel.premiseCount = proofModel.premiseCount + 1
 
         fileModified = true
         cConnector.evalText = "Evaluate Proof"
         proofModel.clearErrors()
     }
 
-    property var combo2: [
-        [qsTr("Modus Ponens"), qsTr("Addition"), qsTr("Simplification"), qsTr("Conjunction"), qsTr("Hypothetical Syllogism"), qsTr("Disjunctive Syllogism"), qsTr("Excluded middle"), qsTr("Constructive Dilemma"), qsTr("XOR Introduction"), qsTr("XOR Elimination")],
-        [qsTr("Implication"), qsTr("DeMorgan"), qsTr("Association"), qsTr("Commutativity"), qsTr("Idempotence"), qsTr("Distribution"), qsTr("Equivalence"), qsTr("Double Negation"), qsTr("Exportation"), qsTr("Subsumption"), qsTr("Contrapositive")],
-        [qsTr("Universal Generalization"), qsTr("Universal Instantiation"), qsTr("Existential Generalization"), qsTr("Existential Instantiation"), qsTr("Bound Variable Substitution"), qsTr("Null Quantifier"), qsTr("Prenex"), qsTr("Identity"), qsTr("Free Variable Substitution")],
-        [qsTr("Lemma"), qsTr("Subproof"), qsTr("Sequence"), qsTr("Induction")],
-        [qsTr("Identity "), qsTr("Negation"), qsTr("Dominance"), qsTr("Symbol Negation")]
-    ]
+    property var chooseCategories: getChooseCategories()
+    property var combo2: getCombo2()
+
+    function getChooseCategories() {
+        return [qsTr("Inference"), qsTr("Equivalence"), qsTr("Predicate"), qsTr("Miscellaneous"), qsTr("Boolean")]
+    }
+
+    function getCombo2() {
+        return [
+            [qsTr("Modus Ponens"), qsTr("Addition"), qsTr("Simplification"), qsTr("Conjunction"), qsTr("Hypothetical Syllogism"), qsTr("Disjunctive Syllogism"), qsTr("Excluded middle"), qsTr("Constructive Dilemma"), qsTr("XOR Introduction"), qsTr("XOR Elimination")],
+            [qsTr("Implication"), qsTr("DeMorgan"), qsTr("Association"), qsTr("Commutativity"), qsTr("Idempotence"), qsTr("Distribution"), qsTr("Equivalence"), qsTr("Double Negation"), qsTr("Exportation"), qsTr("Subsumption"), qsTr("Contrapositive")],
+            [qsTr("Universal Generalization"), qsTr("Universal Instantiation"), qsTr("Existential Generalization"), qsTr("Existential Instantiation"), qsTr("Bound Variable Substitution"), qsTr("Null Quantifier"), qsTr("Prenex"), qsTr("Identity"), qsTr("Free Variable Substitution")],
+            [qsTr("Lemma"), qsTr("Subproof"), qsTr("Sequence"), qsTr("Induction")],
+            [qsTr("Identity "), qsTr("Negation"), qsTr("Dominance"), qsTr("Symbol Negation")]
+        ]
+    }
+
+    function refreshTranslations() {
+        chooseCategories = getChooseCategories()
+        combo2 = getCombo2()
+    }
+
+    Connections {
+        target: settings
+        function onLanguageChanged() {
+            refreshTranslations()
+        }
+    }
+
     anchors.fill: parent
 
     Shortcut {
@@ -196,7 +217,6 @@ Item {
                 proofModel.updateLines()
                 proofModel.updateRefs(insertIndex, true)
                 listView.currentIndex = insertIndex
-                proofModel.premiseCount = proofModel.premiseCount + 1
                 fileModified = true
                 cConnector.evalText = "Evaluate Proof"
                 proofModel.clearErrors()
@@ -233,8 +253,6 @@ Item {
                 var myType = proofModel.data(proofModel.index(myIdx, 0), 258)
 
                 if (listView.count > 1) {
-                    if (myType === "premise")
-                        proofModel.premiseCount = proofModel.premiseCount - 1
                     theData.removeLineAt(myIdx)
                     proofModel.updateLines()
                     proofModel.updateRefs(myIdx, false)
@@ -242,7 +260,6 @@ Item {
                 } else {
                     theData.removeLineAt(0)
                     theData.insertLine(0, 1, "", "premise", false, false, false, 0, [-1])
-                    proofModel.premiseCount = 1
                     proofModel.updateLines()
                     listView.currentIndex = 0
                 }
@@ -405,6 +422,11 @@ Item {
             property int indexx: model.index
             property bool vis: type === "premise" || type === "subproof"
                                || type === "sf"
+            // These delegate-level ints mirror the ProofModel roles.
+            // They must live here (not inside a ComboBox) because inside a ComboBox,
+            // `model` refers to the combo's own string-array model, NOT the row data.
+            property int savedRuleCategory: model.ruleCategory
+            property int savedRuleIndex:    model.ruleIndex
             property string textFieldColor: {
                 if (rootProofArea.selectedIndices.includes(indexx)) {
                     return darkMode ? "#5C469C" : "#E6E6FA"
@@ -422,6 +444,18 @@ Item {
                 listView.currentIndex = -1
                 listView.currentIndex = temp
             }
+
+            // Restore stored integer role values when language change resets combobox models.
+            Connections {
+                target: settings
+                function onLanguageChanged() {
+                    if (outerColumn.savedRuleCategory >= 0)
+                        chooseID.currentIndex = outerColumn.savedRuleCategory
+                    if (outerColumn.savedRuleIndex >= 0)
+                        conclusionRuleID.currentIndex = outerColumn.savedRuleIndex
+                }
+            }
+
 
             RowLayout {
                 id: root_delegate
@@ -452,24 +486,28 @@ Item {
 
                 // Add this button's line to the current line's references
                 onClicked: {
-                    if (listView.currentIndex <= index)
+                    if (listView.currentIndex <= index) {
                         console.log("Invalid Operation : Can only reference to smaller line numbers")
-                    else if (proofModel.data(proofModel.index(
+                        cConnector.evalText = "⚠ " + qsTr("Invalid Operation: A proof line can only reference earlier line numbers.")
+                    } else if (proofModel.data(proofModel.index(
                                                  listView.currentIndex, 0),
-                                             257) === "premise")
+                                             257) === "premise") {
                         console.log("Invalid Operation: Current Line is a premise")
-                    else if (proofModel.data(proofModel.index(
+                        cConnector.evalText = "⚠ " + qsTr("Invalid Operation: Cannot assign inference rules or references to a premise.")
+                    } else if (proofModel.data(proofModel.index(
                                                  listView.currentIndex, 0),
-                                             260) === true)
+                                             260) === true) {
                         //|| proofModel.data(proofModel.index(listView.currentIndex,0),261) === true)
                         console.log("Invalid Operation: Subproof beginning")
-                    else if (proofModel.data(
+                        cConnector.evalText = "⚠ " + qsTr("Invalid Operation: Cannot modify or reference the start line of a subproof directly.")
+                    } else if (proofModel.data(
                                  proofModel.index(listView.currentIndex, 0),
                                  262) < model.ind && proofModel.data(
                                  proofModel.index(listView.currentIndex, 0),
-                                 261) === false)
+                                 261) === false) {
                         console.log("Invalid Operation: Invalid reference to subproof")
-                    else {
+                        cConnector.evalText = "⚠ " + qsTr("Invalid Operation: Cannot reference lines across closed subproof boundaries.")
+                    } else {
                         cConnector.evalText = "Evaluate Proof"
                             proofModel.clearErrors()
                         var array = Array.from(proofModel.data(
@@ -482,6 +520,7 @@ Item {
                                 proofModel.setData(proofModel.index(
                                                        listView.currentIndex,
                                                        0), array, 263)
+                                fileModified = true
                                 refreshTextFieldColor()
                                 return
                             }
@@ -490,6 +529,7 @@ Item {
                         proofModel.setData(proofModel.index(
                                                listView.currentIndex, 0),
                                            array, 263)
+                        fileModified = true
                         refreshTextFieldColor()
                     }
                 }
@@ -636,6 +676,8 @@ Item {
                     }
                 }
 
+                onTextEdited: fileModified = true
+
                 // Save Text inside Model
                 onEditingFinished: {
                     if (model.lText !== text) {
@@ -715,26 +757,16 @@ Item {
                 onActivated: {
                     editCombos = true
                     proofModel.setData(proofModel.index(indexx, 0),
-                                       conclusionRuleID.currentText, 258)
+                                       currentIndex, 265)  // RuleCategoryRole
+                    fileModified = true
                     asteriskID.visible = false
                 }
 
-                model: [qsTr("Inference"), qsTr("Equivalence"), qsTr("Predicate"), qsTr("Miscellaneous"), qsTr("Boolean")]
+                model: chooseCategories
 
-                Component.onCompleted: {
-                    if (!editCombos) {
-                        if (combo2[0].includes(type))
-                            currentIndex = 0
-                        else if (combo2[1].includes(type))
-                            currentIndex = 1
-                        else if (combo2[2].includes(type))
-                            currentIndex = 2
-                        else if (combo2[3].includes(type))
-                            currentIndex = 3
-                        else
-                            currentIndex = 4
-                    }
-                }
+                // Use delegate-level savedRuleCategory (not `model.ruleCategory` here,
+                // because inside a ComboBox `model` shadows the row data).
+                currentIndex: outerColumn.savedRuleCategory >= 0 ? outerColumn.savedRuleCategory : currentIndex
             }
 
             // Second ComboBox to select rule
@@ -775,17 +807,34 @@ Item {
                 onActivated: {
                     editCombos = true
                     proofModel.setData(proofModel.index(indexx, 0),
-                                       currentText, 258)
+                                       chooseID.currentIndex, 265)  // RuleCategoryRole
+                    // Write the rule index integer (locale-invariant).
+                    proofModel.setData(proofModel.index(indexx, 0),
+                                       currentIndex, 266)  // RuleIndexRole
+                    fileModified = true
                     asteriskID.visible = false
                 }
 
-                onModelChanged: {
-                    if (!editCombos) {
-                        currentIndex = model.indexOf(type)
-                    }
+                // DO NOT use a declarative `currentIndex:` binding here.
+                // When chooseID.currentIndex changes, combo2[cat] changes,
+                // which causes QML to reset currentIndex internally — destroying
+                // any declarative binding. Instead we use onModelChanged to
+                // re-apply the saved ruleIndex after the model swap settles.
+                model: combo2[chooseID.currentIndex]
+
+                Component.onCompleted: {
+                    // `model` here is the combo's string array — use outerColumn.savedRuleIndex.
+                    if (outerColumn.savedRuleIndex >= 0)
+                        currentIndex = outerColumn.savedRuleIndex
                 }
 
-                model: combo2[chooseID.currentIndex]
+                onModelChanged: {
+                    // Fires when chooseID.currentIndex changes (during load or user action).
+                    if (!editCombos && outerColumn.savedRuleIndex >= 0)
+                        currentIndex = outerColumn.savedRuleIndex   // restore on load
+                    else if (editCombos)
+                        currentIndex = 0   // user picked a new category → start at rule 0
+                }
             }
 
             // Display Asterisk next to ComboBox if rule not chosen
@@ -841,6 +890,7 @@ Item {
                             proofModel.setData(proofModel.index(
                                                    listView.currentIndex,
                                                    0), ar, 263)
+                            fileModified = true
                             cConnector.evalText = "Evaluate Proof"
                             proofModel.clearErrors()
                         }
@@ -869,10 +919,6 @@ Item {
                 }
 
                 onClicked: {
-                    if (computePremise) {
-                        proofModel.recomputePremiseCount()
-                        computePremise = false
-                    }
                     optionsID.open()
                 }
 
@@ -904,7 +950,6 @@ Item {
                             listView.currentIndex = insertIndex
                             cConnector.evalText = "Evaluate Proof"
                             proofModel.clearErrors()
-                            proofModel.premiseCount = proofModel.premiseCount + 1
                         }
                     }
                     Action {
@@ -1000,9 +1045,6 @@ Item {
                             proofModel.clearErrors()
 
                             if (listView.count > 1) {
-                                if (type === "premise")
-                                    proofModel.premiseCount = proofModel.premiseCount - 1
-
                                 var i = index
                                 theData.removeLineAt(index)
                                 proofModel.updateLines()
@@ -1010,7 +1052,6 @@ Item {
                             } else {
                                 theData.removeLineAt(0)
                                 theData.insertLine(0, 1, "", "premise", false, false, false, 0, [-1])
-                                proofModel.premiseCount = 1
                                 proofModel.updateLines()
                                 listView.currentIndex = 0
                                 console.log("Goal 3: Last line reset to prevent blank screen crash.")

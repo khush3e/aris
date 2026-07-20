@@ -41,7 +41,7 @@ process_inference (unsigned char * conc, vec_t * prems, const char * rule)
     if (!strcmp (rule, "ad"))
     {
         if (prems->num_stuff != 1)
-            return _("Addition requires one (1) references.");
+            return _("Addition requires one (1) reference.");
 
         unsigned char * prem;
         prem = vec_str_nth (prems, 0);
@@ -89,7 +89,7 @@ process_inference (unsigned char * conc, vec_t * prems, const char * rule)
     if (!strcmp (rule, "ds"))
     {
         if (prems->num_stuff < 2)
-            return _("Disjunctive Syllogism requires at least two (2) arguemnts.");
+            return _("Disjunctive Syllogism requires at least two (2) references.");
 
         ret = proc_ds (prems, conc);
         if (!ret)
@@ -163,7 +163,7 @@ proc_mp (unsigned char * prem_0, unsigned char * prem_1, unsigned char * conc)
         if (lsen) free (lsen);
         if (rsen) free (rsen);
 
-        return _("The top connective must be a conditional.");
+        return _("Modus Ponens Error: One of the references must be a conditional statement (->).");
     }
 
     int ant_eq, con_eq;
@@ -174,11 +174,14 @@ proc_mp (unsigned char * prem_0, unsigned char * prem_1, unsigned char * conc)
     free (lsen);
     free (rsen);
 
+    if (!ant_eq && !con_eq)
+        return _("Modus Ponens Error: Neither the antecedent nor the consequence of the conditional matches the premise or conclusion. Check your references and line order.");
+
     if (!ant_eq)
-        return _("The antecedent of the conditional reference must be the other reference.");
+        return _("Modus Ponens Error: The antecedent of the conditional (->) does not match the minor premise reference.");
 
     if (!con_eq)
-        return _("The consequence of the conditional reference must be the conclusion.");
+        return _("Modus Ponens Error: The consequence of the conditional (->) does not match the conclusion.");
 
     return CORRECT;
 }
@@ -291,7 +294,7 @@ proc_cn (vec_t * prems, unsigned char * conc)
     case -3:
         return _("One of the conjuncts in the conclusion does not match up with a reference.");
     }
-    return _("Error");
+    return _("Conjunction Error: The referenced conjuncts do not match the conclusion.");
 }
 
 char *
@@ -509,7 +512,7 @@ proc_ds (vec_t * prems, unsigned char * conc)
     case -3:
         return _("One of the references or conclusion does not match up with a disjunct.");
     }
-    return _("Error with Disjunctive Syllogism.");
+    return _("Disjunctive Syllogism Error: The referenced disjunction or negation does not match the conclusion.");
 }
 
 char *
@@ -645,7 +648,7 @@ proc_cd (vec_t * prems, unsigned char * conc)
         destroy_str_vec (conc_gg_vec);
         destroy_str_vec (ants);
         destroy_str_vec (cons);
-        return _("Constructive Dilemma constructed incorrectly.");
+        return _("Constructive Dilemma Error: The structure of the conditionals or disjunctions does not match.");
     }
 
     int ants_ret_chk, cons_ret_chk;
@@ -683,7 +686,7 @@ proc_cd (vec_t * prems, unsigned char * conc)
     case -3:
         return _("One of the consequences did not match a disjunct from the conclusion.");
     }
-    return _("Error with Constructive Dilemma.");
+    return _("Constructive Dilemma Error: The antecedents or consequences do not correspond to the conclusion's disjuncts.");
 }
 
 /* XOR Introduction (xi).

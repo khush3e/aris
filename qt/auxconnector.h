@@ -41,6 +41,7 @@ public:
 
 signals:
     void importFinished(bool success);
+    void errorOccurred(const QString &message);
 
 private:
 

@@ -21,6 +21,7 @@ import QtQuick.Window 2.15
 import QtQuick.Layouts 1.3
 import QtQuick.Controls 2.5
 import QtQuick.Dialogs
+import Qt.labs.settings 1.0
 import proof.model 1.0
 import goal.model 1.0
 
@@ -29,18 +30,30 @@ ApplicationWindow {
 
     property font thefont: rootID.font
     property bool isExtFile: false // If the file is opened from an external file
-    property bool darkMode: false
+    property bool darkMode: appPrefs.darkMode
     property string filename: "Untitled"
     property bool fileExists: isExtFile
     property bool fileModified: false
-    property bool computePremise: false // set to true if Open or Import Proof are used
     property int importMode: 0
 
-    //  Zoom infrastructure (Proof Line section only) 
-    property real zoomFactor: 1.0          // single source of truth
+    //  Zoom infrastructure (Proof Line section only)
+    property real zoomFactor: appPrefs.zoomFactor
     readonly property real zoomMin:  0.3
     readonly property real zoomMax:  2.0
     readonly property real zoomStep: 0.1
+
+    // Persist user preferences across reloads (localStorage on WASM, QSettings on desktop).
+    Settings {
+        id: appPrefs
+        category: "ArisPreferences"
+        property string language: "en"
+        property bool   darkMode: false
+        property real   zoomFactor: 1.0
+    }
+
+    // Keep persisted prefs in sync whenever the user changes them at runtime.
+    onDarkModeChanged:  appPrefs.darkMode   = darkMode
+    onZoomFactorChanged: appPrefs.zoomFactor = zoomFactor
 
     // Convenience helpers consumed by ProofArea.qml
     readonly property real scaledFontSize: Math.round(thefont.pointSize * zoomFactor)
@@ -51,8 +64,8 @@ ApplicationWindow {
     function zoomReset() { zoomFactor = 1.0 }
    
 
-    // premiseCount is now a C++ Q_PROPERTY on proofModel.
-    // Use proofModel.recomputePremiseCount() after opening/importing a file.
+    // premiseCount is a read-only C++ Q_PROPERTY on proofModel.
+    // It is automatically recomputed whenever lines are inserted or removed.
 
     // Function to check if the item is a TextField QML Type
     function isTextField(item) {
@@ -65,8 +78,6 @@ ApplicationWindow {
 
         theGoals.reset()
 
-        proofModel.premiseCount = 1
-        computePremise = false
         isExtFile = false
         fileExists = false
         fileModified = false
@@ -98,8 +109,6 @@ ApplicationWindow {
         cConnector.evalText = "Evaluate Proof"
         proofModel.clearErrors()
         isExtFile = true
-        computePremise = true
-
         importBehaviorID.close()
         menuOptions.close()
 
@@ -190,6 +199,9 @@ ApplicationWindow {
 
     Component.onCompleted: () => {
         qsTr("QT_LAYOUT_DIRECTION", "QGuiApplication");
+        // Restore language preference saved from the previous session.
+        if (appPrefs.language !== "en")
+            settings.setLanguage(appPrefs.language)
     }
 
     onClosing: function(close) {
@@ -254,23 +266,37 @@ ApplicationWindow {
 
         function onImportFinished(success) {
             if (success) {
+                isExtFile = true
                 fileModified = true
                 // Immediately autosave the newly imported content so the
                 // autosave reflects what was imported, not the previous state.
                 if (Qt.platform.os === "wasm")
                     cConnector.autoSave(theData, theGoals)
+            } else {
+                // No-op: Error already set by errorOccurred, or user cancelled dialog.
             }
+        }
+
+        function onErrorOccurred(message) {
+            // Route auxConnector errors (LaTeX export, import parse) to the
+            // same footer status bar used by cConnector errors.
+            cConnector.evalText = "⚠ " + message
         }
     }
 
     Connections {
         target: cConnector
 
+        function onAutoLoadDone(success) {
+            if (success) {
+                isExtFile = true
+            }
+        }
+
         function onSmartPasteStarted() {
             // Called at the very start of smartPaste() — mark proof as
             // coming from an external source so the UI renders ref numbers.
             isExtFile = true
-            computePremise = true
             cConnector.evalText = "Evaluate Proof"
             proofModel.clearErrors()
         }
@@ -280,6 +306,11 @@ ApplicationWindow {
             // isExtFile stays true (the proof is now an "opened" document).
             fileModified = true
             menuOptions.close()
+        }
+
+        function onErrorOccurred(message) {
+            // Route file I/O errors to the footer status bar (already red).
+            cConnector.evalText = "⚠ " + message
         }
     }
 
@@ -365,8 +396,6 @@ ApplicationWindow {
             filename = selectedFile
             isExtFile = true
             fileModified = false
-            computePremise = true
-            proofModel.recomputePremiseCount()
             // Immediately autosave the newly opened file so the autosave
             if (Qt.platform.os === "wasm")
                 cConnector.autoSave(theData, theGoals)
@@ -411,7 +440,6 @@ ApplicationWindow {
         onAccepted: {
             auxConnector.importProofWithMode(selectedFile, theData, cConnector,
                                      proofModel, importMode)
-            proofModel.recomputePremiseCount()
         }
     }
 
@@ -673,7 +701,7 @@ ApplicationWindow {
     Shortcut {
         sequences: [StandardKey.Paste]
         onActivated: {
-            // smartPasteStarted signal sets isExtFile/computePremise before rows are inserted
+            // smartPasteStarted signal sets isExtFile before rows are inserted
             cConnector.smartPaste(theData, proofModel)
         }
     }

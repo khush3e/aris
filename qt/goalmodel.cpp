@@ -157,7 +157,11 @@ void GoalModel::evalGoals(GoalData *gls, Connector *c)
             setData(index(i,0),ln,256);
             setData(index(i,0),(is_valid == 1),258);
         }
-        else
+        else {
             qDebug() << "Error in checking goal " << i + 1 << ":\n\t Goal was probably empty or invalid";
+            c->setEvalText(QStringLiteral("⚠ ") +
+                           c->tr("Goal %1 could not be evaluated — it may be malformed or contain invalid syntax.")
+                               .arg(i + 1));
+        }
     }
 }

@@ -77,12 +77,17 @@ proof_destroy (proof_t * proof)
  *    proof - The proof that is being evaluated.
  *    rets - A vector to store the return values.
  *    verbose - A flag denoting verbosity.
+ *    conns - The connectives set to use for this evaluation.
  *  output:
  *    0 on success, -1 on memory error.
  */
 int
-proof_eval (proof_t * proof, vec_t * rets, int verbose)
+proof_eval (proof_t * proof, vec_t * rets, int verbose, struct connectives_list conns)
 {
+    /* Centralise the single write to main_conns: callers pass in the
+       connectives they need instead of mutating the global themselves. */
+    main_conns = conns;
+
     int rc;
     rc = eval_proof (proof->everything, rets, verbose);
 

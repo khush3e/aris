@@ -242,6 +242,22 @@ there are invalid quantifiers in the string - '%s'\n", arg_text);
       fprintf (stderr, "Text Error - \
 there are syntactical errors in the string - '%s'\n", arg_text);
       return 0;
+    case -6:
+      fprintf (stderr, "Text Error - \
+predicate names must start with an uppercase letter in the string - '%s'\n", arg_text);
+      return 0;
+    case -7:
+      fprintf (stderr, "Text Error - \
+term/variable names must start with a lowercase letter in the string - '%s'\n", arg_text);
+      return 0;
+    case -8:
+      fprintf (stderr, "Text Error - \
+invalid symbol characters or empty argument list in the string - '%s'\n", arg_text);
+      return 0;
+    case -9:
+      fprintf (stderr, "Text Error - \
+ambiguous chaining of ->, <->, or XOR without parentheses in the string - '%s'\n", arg_text);
+      return 0;
     }
 
   return 1;
@@ -255,7 +271,7 @@ there are syntactical errors in the string - '%s'\n", arg_text);
  *    -1 on memory error.
  */
 int
-grade_file (proof_t * c_file)
+grade_file (proof_t * c_file, struct connectives_list conns)
 {
   int ret_chk, grade;
   vec_t * rets;
@@ -266,7 +282,7 @@ grade_file (proof_t * c_file)
   if (!rets)
     return -1;
 
-  ret_chk = proof_eval (c_file, rets, 0);
+  ret_chk = proof_eval (c_file, rets, 0, conns);
   if (ret_chk == -1)
     return -1;
 
@@ -790,7 +806,7 @@ a conclusion must be specified in evaluation mode.\n");
                 {
                   if (verbose)
                     printf ("Grading file: '%s'\n", file_name[c]);
-                  g = grade_file (proof[c]);
+                  g = grade_file (proof[c], cli_conns);
                   if (g == -1)
                     exit (EXIT_FAILURE);
                   printf ("\n");
@@ -802,7 +818,7 @@ a conclusion must be specified in evaluation mode.\n");
           for (c = 0; c < cur_file; c++)
             {
               int ret_chk;
-              ret_chk = proof_eval (proof[c], NULL, verbose);
+              ret_chk = proof_eval (proof[c], NULL, verbose, cli_conns);
               if (ret_chk == -1)
                 exit (EXIT_FAILURE);
             }

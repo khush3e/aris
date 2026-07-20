@@ -25,7 +25,7 @@ class ProofModel : public QAbstractListModel
 {
     Q_OBJECT
     Q_PROPERTY(ProofData* lines READ lines WRITE setlines)
-    Q_PROPERTY(int premiseCount READ premiseCount WRITE setPremiseCount
+    Q_PROPERTY(int premiseCount READ premiseCount
                NOTIFY premiseCountChanged)
 
 public:
@@ -40,7 +40,9 @@ public:
         SubEndRole,
         IndentRole,
         RefsRole,
-        ErrorRole      // carries pErrorMsg — "errMsg" in QML
+        ErrorRole,      // carries pErrorMsg — "errMsg" in QML
+        RuleCategoryRole,   // int 0-4 — locale-invariant outer combo index
+        RuleIndexRole       // int 0-N — locale-invariant inner combo index
     };
 
     // Basic functionality:
@@ -62,25 +64,27 @@ public:
     Q_INVOKABLE void updateRefs(int ln, bool op);
     Q_INVOKABLE void clearErrors();  // reset ErrorRole on every row
 
-    // premiseCount — single source of truth for the premise/conclusion boundary.
+    // premiseCount — computed from the model data; read-only from QML.
     int  premiseCount() const;
-    void setPremiseCount(int n);
 
-    // Toggle a line between "premise" and "choose", clear its refs, and update
-    // premiseCount atomically.  Returns false if the row is out of range or the
-    // line is a subproof/sf line.
+    
     Q_INVOKABLE bool toggleLineType(int row);
 
-    // Rescan all rows and recompute premiseCount from scratch.  Call this after
-    // opening or importing a file so the counter is always in sync with the data.
     Q_INVOKABLE void recomputePremiseCount();
 
 signals:
     void premiseCountChanged(int n);
 
 private:
+    void setPremiseCount(int n);
     ProofData *mLines;
     int  mPremiseCount = 1;
+
+    static QString canonicalName(int cat, int idx);
+
+    // Returns a map from canonical English rule name -> {cat, idx}.
+    struct RulePos { int cat; int idx; };
+    static const QHash<QString, RulePos> &rulePosMap();
 };
 
 #endif // PROOFMODEL_H

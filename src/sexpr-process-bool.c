@@ -63,7 +63,7 @@ process_bool (unsigned char * conc, vec_t * prems, const char * rule)
   if (!strcmp (rule, "sn"))
     {
       if (prems->num_stuff != 1)
-    return _("Symbol Negation require one (1) reference.");
+    return _("Symbol Negation requires exactly one (1) reference.");
 
       prem = vec_nth (prems, 0);
       ret = proc_sn (*prem, conc);
@@ -98,7 +98,7 @@ proc_bi (unsigned char * prem, unsigned char * conc)
     {
       si--;
       if (si < 0)
-    return _("Boolean Identity constructed incorrectly.");
+    return _("Boolean Identity Error: Expected simplification or expansion with True/False constants.");
     }
   else if (si > 0
        && (!strncmp (sh_sen + si - 1, S_AND, S_CL)
@@ -133,7 +133,7 @@ proc_bi (unsigned char * prem, unsigned char * conc)
     return NULL;
 
       if (li < 0)
-    return _("Boolean Identity constructed incorrectly.");
+    return _("Boolean Identity Error: Expected simplification or expansion with True/False constants.");
 
       if (si < 0)
     {
@@ -144,7 +144,7 @@ proc_bi (unsigned char * prem, unsigned char * conc)
     }
 
   if (ln_sen[li] != '(')
-    return _("Boolean Identity constructed incorrectly.");
+    return _("Boolean Identity Error: Expected simplification or expansion with True/False constants.");
 
   int tmp_pos;
   unsigned char * tmp_str;
@@ -232,7 +232,7 @@ with a disjunction.");
   if (ret_str == NO_DIFFERENCE || ret_str == CORRECT)
     return CORRECT;
 
-  return _("Boolean Identity constructed incorrectly.");
+  return _("Boolean Identity Error: Expected simplification or expansion with True/False constants.");
 }
 
 char *
@@ -336,7 +336,7 @@ proc_bd (unsigned char * prem, unsigned char * conc)
   if (ret_str == NO_DIFFERENCE || ret_str == CORRECT)
     return CORRECT;
 
-  return _("Boolean Dominance constructed incorrectly.");
+  return _("Boolean Dominance Error: Expected absorption with True/False constants.");
 }
 
 char *
@@ -423,7 +423,7 @@ proc_bn (unsigned char * prem, unsigned char * conc)
   if (ret_str == NO_DIFFERENCE || ret_str == CORRECT)
     return CORRECT;
 
-  return _("Boolean Negation constructed incorrectly.");
+  return _("Boolean Negation Error: Expected complementary cancellation or constant negation.");
 }
 
 char *
@@ -491,5 +491,5 @@ proc_sn (unsigned char * prem, unsigned char * conc)
   if (ret_str == NO_DIFFERENCE || ret_str == CORRECT)
     return CORRECT;
 
-  return _("Symbol Negation constructed incorrectly.");
+  return _("Symbol Negation Error: Expected negation of a Boolean constant symbol.");
 }

@@ -92,7 +92,12 @@ RowLayout {
             }
         }
 
-        onEditingFinished: model.text = text
+        onTextEdited: fileModified = true
+
+        onEditingFinished: {
+            if (model.text !== text) fileModified = true
+            model.text = text
+        }
     }
 
     Button {
@@ -115,6 +120,7 @@ RowLayout {
                 text: "Add Goal"
                 onTriggered: {
                     theGoals.insertgLine(index + 1, -2, false, "")
+                    fileModified = true
                 }
             }
 
@@ -123,8 +129,11 @@ RowLayout {
                 onTriggered: {
                     if (goalDataID.rowCount() > 1) {
                         theGoals.removegLineAt(index)
-                    } else
+                        fileModified = true
+                    } else {
                         console.log("Invalid Operation: Cannot remove all Lines")
+                        cConnector.evalText = "⚠ " + qsTr("Invalid Operation: At least one goal line must remain.")
+                    }
                 }
             }
         }

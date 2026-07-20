@@ -22,3 +22,7 @@ doc/aris/*.html
 doc/aris.info
 doc/stamp-vti
 doc/version.texi
+
+# Personal editor config 
+.vscode/
+.DS_Store

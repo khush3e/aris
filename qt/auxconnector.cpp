@@ -110,8 +110,10 @@ void auxConnector::latex(const QString &name, const ProofData *toBeEval, Connect
     if (convert_proof_latex(c->getCProof(),file_name) == 0){
         qDebug() << "Latex conversion successful";
     }
-    else
+    else {
         qDebug() << "Memory Error";
+        emit errorOccurred(tr("LaTeX export failed: could not convert proof to LaTeX format."));
+    }
     if (file_name)
         free(file_name);
 
@@ -153,6 +155,7 @@ void auxConnector::importProof(const QString &name, ProofData *pd, const Connect
 
     if (!proof) {
         qDebug() << "Failed to import proof";
+        emit errorOccurred(tr("Import failed: the selected file could not be opened or is not a valid Aris proof."));
         free(file_name);
         emit importFinished(false);
         return;
@@ -212,8 +215,11 @@ void auxConnector::importProof(const QString &name, ProofData *pd, const Connect
 
             if (sd->depth > 0)
                 sd->rule = -2;
-            pd->insertLine(num_ins,num_ins+1,(const char *) sd->text,c->reverseRulesMap[sd->rule],false,
-                               false,false, sd->depth * 20,temp_refs);
+            {
+                auto ci = Connector::getCategoryAndIndex(sd->rule);
+                pd->insertLine(num_ins,num_ins+1,(const char *) sd->text,c->reverseRulesMap[sd->rule],false,
+                                   false,false, sd->depth * 20,temp_refs, ci.first, ci.second);
+            }
             pd->setFile(num_ins,newName);
             pm->updateLines();
             pm->updateRefs(num_ins,true);
@@ -272,8 +278,11 @@ void auxConnector::importProof(const QString &name, ProofData *pd, const Connect
             for (int i = 0; sd->refs[i] != REF_END; i++)
                 temp_refs.push_back(sd->refs[i]);
 
-            pd->insertLine(l,l+1,(const char *) sd->text,c->reverseRulesMap[sd->rule],false,
-                           false,false, sd->depth * 20,temp_refs);
+            {
+                auto ci = Connector::getCategoryAndIndex(sd->rule);
+                pd->insertLine(l,l+1,(const char *) sd->text,c->reverseRulesMap[sd->rule],false,
+                               false,false, sd->depth * 20,temp_refs, ci.first, ci.second);
+            }
             pd->setFile(l,newName);
             pm->updateLines();
             pm->updateRefs(l,true);
@@ -344,7 +353,8 @@ void auxConnector::importProofWithMode(const QString &name, ProofData *pd, const
         const QList<int> refs = shiftedRefs(line.pRefs, refDelta);
 
         pd->insertLine(targetIndex, targetIndex + 1, line.pText, line.pType,
-                       line.pSub, line.pSubStart, line.pSubEnd, line.pInd, refs);
+                       line.pSub, line.pSubStart, line.pSubEnd, line.pInd, refs,
+                       line.pRuleCategory, line.pRuleIndex);
 
         if (line.fname)
             pd->setFile(targetIndex, QString::fromUtf8((const char *) line.fname));

@@ -278,7 +278,7 @@ sen_data_evaluate (sen_data * sd, int * ret_val, list_t * pf_vars, list_t * line
         else
         {
             *ret_val = VALUE_TYPE_ERROR;
-            return _("Only the first sentence can be blank.");
+            return _("Only line 1 can be blank; subsequent blank lines are not allowed.");
         }
     }
 
@@ -297,13 +297,21 @@ sen_data_evaluate (sen_data * sd, int * ret_val, list_t * pf_vars, list_t * line
     case 0:
         break;
     case -2:
-        return _("The sentence has mismatched parenthesis.");
+        return _("Syntax Error: Mismatched parentheses. Check opening and closing brackets.");
     case -3:
-        return _("The sentence has invalid connectives.");
+        return _("Syntax Error: Unrecognized or invalid logical connective symbol.");
     case -4:
-        return _("The sentence has invalid quantifiers.");
+        return _("Syntax Error: Unrecognized or invalid quantifier symbol.");
     case -5:
-        return _("The sentence has syntactical errors.");
+        return _("Syntax Error: The sentence has syntactical errors.");
+    case -6:
+        return _("Syntax Error: Predicate or propositional variable names must start with an uppercase letter (A-Z).");
+    case -7:
+        return _("Syntax Error: Individual terms and variables must start with a lowercase letter (a-z) or number.");
+    case -8:
+        return _("Syntax Error: Invalid characters in symbol name or empty argument parentheses '()'.");
+    case -9:
+        return _("Syntax Error: Chaining conditionals (->), biconditionals (<->), or XOR without enclosing parentheses is ambiguous.");
     }
 
     *ret_val = VALUE_TYPE_BLANK;
@@ -317,7 +325,7 @@ sen_data_evaluate (sen_data * sd, int * ret_val, list_t * pf_vars, list_t * line
     if (sd->rule == -1 || sd->rule >= NUM_RULES)
     {
         *ret_val = VALUE_TYPE_RULE;
-        return _("The sentence is missing a rule.");
+        return _("Missing Rule: Please select a justification rule for this proof line.");
     }
 
     *ret_val = VALUE_TYPE_ERROR;
@@ -338,7 +346,7 @@ sen_data_evaluate (sen_data * sd, int * ret_val, list_t * pf_vars, list_t * line
         {
             destroy_str_vec (refs);
             *ret_val = VALUE_TYPE_ERROR;
-            return _("A referenced line does not exist in this proof.");
+            return _("Invalid Reference: One or more referenced line numbers do not exist in this proof.");
         }
 
         cur_ref = ls_nth (lines, sd->refs[i] - 1);
@@ -356,7 +364,7 @@ sen_data_evaluate (sen_data * sd, int * ret_val, list_t * pf_vars, list_t * line
             destroy_str_vec (refs);
             *ret_val = VALUE_TYPE_REF;
 
-            return _("One of the sentence's references has a text error.");
+            return _("Invalid Reference: A referenced line has a syntax or evaluation error. First fix the error on that line.");
         }
 
         unsigned char * ref_text;
@@ -396,7 +404,7 @@ sen_data_evaluate (sen_data * sd, int * ret_val, list_t * pf_vars, list_t * line
                 {
                     *ret_val = VALUE_TYPE_REF;
                     destroy_str_vec (refs);
-                    return _("One of the sentence's references has a text error.");
+                    return _("Invalid Reference: A referenced line has a syntax or evaluation error. First fix the error on that line.");
                 }
 
                 unsigned char * ref_text;
@@ -408,7 +416,7 @@ sen_data_evaluate (sen_data * sd, int * ret_val, list_t * pf_vars, list_t * line
             }
             else if (sd->rule == RULE_SP)
             {
-                return _("\'sp\' can only be used with a subproof as a reference.");
+                return _("Rule 'sp' (Subproof) can only reference the starting line of a subproof.");
             }
         }
     }
@@ -463,7 +471,7 @@ sen_data_evaluate (sen_data * sd, int * ret_val, list_t * pf_vars, list_t * line
                 *ret_val = VALUE_TYPE_ERROR;
                 destroy_str_vec (refs);
                 destroy_vec (vars);
-                return _("Unable to open lemma file.");
+                return _("File Error: Unable to open or read the specified lemma file.");
             }
 
             main_conns = current_conns;
