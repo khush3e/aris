@@ -9,7 +9,7 @@
   <entry n="2" t="@x(P(x) % Q(x))  ;; A sentence part"/>
  </premises>
  <conclusions>
-  <entry n="3" l="14" r="1" d="0" t="(A $ B) &amp; (B $ A)"/>
-  <entry n="4" l="14" r="2" d="0" t="@x((P(x) $ Q(x)) &amp; (Q(x) $ P(x)))"/>
+  <entry n="3" l="16" r="1" d="0" t="(A $ B) &amp; (B $ A)"/>
+  <entry n="4" l="16" r="2" d="0" t="@x((P(x) $ Q(x)) &amp; (Q(x) $ P(x)))"/>
  </conclusions>
 </proof>

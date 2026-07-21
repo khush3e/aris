@@ -9,7 +9,7 @@
   <entry n="2" t="B | ~B"/>
  </premises>
  <conclusions>
-  <entry n="3" l="32" r="1" d="0" t="^"/>
-  <entry n="4" l="32" r="2" d="0" t="!"/>
+  <entry n="3" l="35" r="1" d="0" t="^"/>
+  <entry n="4" l="35" r="2" d="0" t="!"/>
  </conclusions>
 </proof>
