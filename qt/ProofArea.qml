@@ -929,6 +929,7 @@ Item {
 
                 // Implementation for Keyboard Macros
                 onTextChanged: {
+                    let replaced = false;
 
                     // TODO: Improve implementation later
                     if (theTextID.length >= 2) {
@@ -937,15 +938,42 @@ Item {
                         if (last_two.includes('/\\')) {
                             theTextID.remove(cursorPosition - 2, cursorPosition)
                             theTextID.insert(cursorPosition, "\u2227")
+                            replaced = true;
                         } else if (last_two.includes('\\/')) {
                             theTextID.remove(cursorPosition - 2, cursorPosition)
                             theTextID.insert(cursorPosition, "\u2228")
+                            replaced = true;
                         } else if (last_two.includes('->')) {
                             theTextID.remove(cursorPosition - 2, cursorPosition)
                             theTextID.insert(cursorPosition, "\u2192")
+                            replaced = true;
                         } else if (last_two.includes('<' + "\u2192")) {
                             theTextID.remove(cursorPosition - 2, cursorPosition)
                             theTextID.insert(cursorPosition, "\u2194")
+                            replaced = true;
+                        }
+                    }
+
+                    if (!replaced && theTextID.length >= 1) {
+                        const last_one = text.slice(cursorPosition - 1, cursorPosition)
+                        let replacement = "";
+                        switch (last_one) {
+                            case '^': replacement = "\u2295"; break; // XOR
+                            case '&': replacement = "\u2227"; break; // AND
+                            case '|': replacement = "\u2228"; break; // OR
+                            case '~': replacement = "\u00AC"; break; // NOT
+                            case '$': replacement = "\u2192"; break; // CON
+                            case '%': replacement = "\u2194"; break; // BIC
+                            case '@': replacement = "\u2200"; break; // UNV
+                            case '#': replacement = "\u2203"; break; // EXL
+                            case '!': replacement = "\u22A4"; break; // TAU
+                            case '?': replacement = "\u22A5"; break; // CTR
+                            case ':': replacement = "\u2208"; break; // ELM
+                            case '>': replacement = "\u2349"; break; // NIL
+                        }
+                        if (replacement !== "") {
+                            theTextID.remove(cursorPosition - 1, cursorPosition)
+                            theTextID.insert(cursorPosition, replacement)
                         }
                     }
                 }
