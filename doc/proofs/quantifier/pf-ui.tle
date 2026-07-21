@@ -10,10 +10,10 @@
   <entry n="2" t="@x(A(x) &amp; @y(B(y)))"/>
  </premises>
  <conclusions>
-  <entry n="3" l="19" r="1" d="0" t="P(a) $ Q(a)"/>
-  <entry n="4" l="19" r="2" d="0" t="A(b) &amp; @y(B(y))"/>
+  <entry n="3" l="22" r="1" d="0" t="P(a) $ Q(a)"/>
+  <entry n="4" l="22" r="2" d="0" t="A(b) &amp; @y(B(y))"/>
   <entry n="5" l="2" r="4" d="0" t="@y(B(y))"/>
-  <entry n="6" l="19" r="5" d="0" t="B(a)"/>
-  <entry n="7" l="19" r="5" d="0" t="B(b)"/>
+  <entry n="6" l="22" r="5" d="0" t="B(a)"/>
+  <entry n="7" l="22" r="5" d="0" t="B(b)"/>
  </conclusions>
 </proof>

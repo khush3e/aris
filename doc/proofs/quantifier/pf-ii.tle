@@ -9,8 +9,8 @@
   <entry n="1" t=""/>
  </premises>
  <conclusions>
-  <entry n="2" l="25" r="" d="0" t="a = a"/>
-  <entry n="3" l="25" r="" d="0" t="f(c) = f(c)"/>
-  <entry n="4" l="25" r="" d="0" t="a + b = a + b"/>
+  <entry n="2" l="28" r="" d="0" t="a = a"/>
+  <entry n="3" l="28" r="" d="0" t="f(c) = f(c)"/>
+  <entry n="4" l="28" r="" d="0" t="a + b = a + b"/>
  </conclusions>
 </proof>
