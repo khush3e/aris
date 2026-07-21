@@ -63,6 +63,9 @@ public:
     Q_INVOKABLE void updateLines();
     Q_INVOKABLE void updateRefs(int ln, bool op);
     Q_INVOKABLE void clearErrors();  // reset ErrorRole on every row
+    // Scrub every reference to lineNum (1-based) from ALL other lines.
+    // Safer than doing it from QML because there are no QVariant conversion issues.
+    Q_INVOKABLE void clearRefsToLine(int lineNum);
 
     // premiseCount — computed from the model data; read-only from QML.
     int  premiseCount() const;

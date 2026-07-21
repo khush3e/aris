@@ -314,6 +314,31 @@ void ProofModel::clearErrors()
     }
 }
 
+// Scrub every reference to lineNum (1-based display number) from ALL rows.
+// Called before physically moving a line so no other line ends up with a
+// stale ref that becomes a self-reference after the remove+reinsert cycle.
+// updateRefs(ln, false) only iterates rows AFTER ln — this covers all rows.
+void ProofModel::clearRefsToLine(int lineNum)
+{
+    if (!mLines) return;
+    const int n = mLines->lines().size();
+    for (int i = 0; i < n; i++) {
+        ProofLine ln = mLines->lines().at(i);
+        bool changed = false;
+        // pRefs[0] is always the sentinel -1; start at index 1.
+        for (int j = ln.pRefs.size() - 1; j >= 1; j--) {
+            if (ln.pRefs[j] == lineNum) {
+                ln.pRefs.removeAt(j);
+                changed = true;
+            }
+        }
+        if (changed) {
+            mLines->setLineAt(i, ln);
+            emit dataChanged(index(i, 0), index(i, 0), {RefsRole});
+        }
+    }
+}
+
 // premiseCount property 
 
 int ProofModel::premiseCount() const

@@ -28,6 +28,14 @@ Item {
     property var selectedIndices: []
     property int lastSelectedIndex: -1
 
+    // Public API consumed by main.qml (jump-to-line dialog, Ctrl+J)
+    readonly property int listViewCount: listView.count
+    function jumpToLine(idx) {
+        if (idx < 0 || idx >= listView.count) return
+        listView.currentIndex = idx
+        listView.positionViewAtIndex(idx, ListView.Center)
+    }
+
     // Returns a human-readable string listing every conclusion line whose
     // refs array contains `lineNum` (1-based).  Empty string = no incoming refs.
     function findIncomingRefs(lineNum) {
@@ -36,7 +44,7 @@ Item {
         for (var i = 0; i < n; i++) {
             var refs = proofModel.data(proofModel.index(i, 0), 263)  // RefsRole
             if (refs && Array.from(refs).indexOf(lineNum) !== -1)
-                holders.push(proofModel.data(proofModel.index(i, 0), 256) + 1)  // LineRole (1-based display)
+                holders.push(proofModel.data(proofModel.index(i, 0), 256))  // LineRole is already 1-based
         }
         return holders.length === 0 ? "" : holders.join(", ")
     }
@@ -49,6 +57,12 @@ Item {
         var pSubSt  = proofModel.data(proofModel.index(myIdx, 0), 260)  // SubStartRole
         var pSubEnd = proofModel.data(proofModel.index(myIdx, 0), 261)  // SubEndRole
         var pInd    = proofModel.data(proofModel.index(myIdx, 0), 262)  // IndentRole
+        var pLine   = proofModel.data(proofModel.index(myIdx, 0), 256)  // LineRole (1-based)
+
+        // Scrub all incoming refs to this line from every other row BEFORE
+        // the physical remove+reinsert so no row ends up self-referencing.
+        // Uses C++ directly to avoid QVariant conversion issues from QML.
+        proofModel.clearRefsToLine(pLine)
 
         theData.removeLineAt(myIdx)
         proofModel.updateLines()
@@ -71,7 +85,11 @@ Item {
     // Edge-case conversion: move conclusion at myIdx to the boundary, then convert.
     // Called when the line is NOT the first conclusion (requires a physical move).
     function doConvertConclusion(myIdx) {
-        var cText = proofModel.data(proofModel.index(myIdx, 0), 257)  // TextRole
+        var cText  = proofModel.data(proofModel.index(myIdx, 0), 257)  // TextRole
+        var cLine  = proofModel.data(proofModel.index(myIdx, 0), 256)  // LineRole (1-based)
+
+        // Scrub all incoming refs to this conclusion before moving it.
+        proofModel.clearRefsToLine(cLine)
 
         theData.removeLineAt(myIdx)
         proofModel.updateLines()
@@ -146,6 +164,235 @@ Item {
             }
         }
     }
+
+    // ── Navigation: move focus one line at a time ─────────────────────────
+    // Alt+Up / Alt+Down = Option+Up / Option+Down on macOS.
+    // These are the only bindings for focus movement — Ctrl/Cmd are reserved
+    // for the jump-to-first/last shortcuts below.
+    Shortcut {
+        sequences: ["Alt+Up"]
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            if (listView.count > 0)
+                listView.currentIndex = Math.max(0, listView.currentIndex - 1)
+        }
+    }
+    Shortcut {
+        sequences: ["Alt+Down"]
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            if (listView.count > 0)
+                listView.currentIndex = Math.min(listView.count - 1,
+                                                  listView.currentIndex + 1)
+        }
+    }
+
+    // ── Navigation: jump to first / last line ─────────────────────────────
+    // Ctrl+Home  / Ctrl+End  = standard Windows/Linux.
+    // Ctrl+Up    / Ctrl+Down = Cmd+Up / Cmd+Down on macOS (standard macOS
+    //   document navigation: Command+Up jumps to top, Command+Down to bottom).
+    Shortcut {
+        sequences: ["Ctrl+Home", "Ctrl+Up"]
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            if (listView.count > 0) {
+                listView.currentIndex = 0
+                listView.positionViewAtBeginning()
+            }
+        }
+    }
+    Shortcut {
+        sequences: ["Ctrl+End", "Ctrl+Down"]
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            if (listView.count > 0) {
+                listView.currentIndex = listView.count - 1
+                listView.positionViewAtEnd()
+            }
+        }
+    }
+
+    // Ctrl+Return / Cmd+Return — add a conclusion line.
+    // If the current line is a premise, inserts at the end of the premise
+    // block (right after the last premise) so the new conclusion is always
+    // in the correct structural position.
+    // If the current line is already a conclusion, inserts immediately below.
+    Shortcut {
+        sequences: ["Ctrl+Return", "Meta+Return"]
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            var cur = listView.currentIndex
+            if (cur < 0) {
+                cConnector.evalText = "⚠ " + qsTr("No line selected.")
+                return
+            }
+            var curType = proofModel.data(proofModel.index(cur, 0), 258)  // TypeRole
+            var curSub  = proofModel.data(proofModel.index(cur, 0), 259)  // SubRole
+            var curInd  = proofModel.data(proofModel.index(cur, 0), 262)  // IndentRole
+
+            // If on a premise line, always insert right after the last premise
+            // so the new line lands cleanly in the conclusion block.
+            var insertAt = (curType === "premise")
+                           ? proofModel.premiseCount
+                           : cur + 1
+
+            theData.insertLine(insertAt, insertAt + 1, "", "choose",
+                               curSub, false, false, curInd, [-1])
+            proofModel.updateLines()
+            proofModel.updateRefs(insertAt, true)
+            listView.currentIndex = insertAt
+            fileModified = true
+            cConnector.evalText = "Evaluate Proof"
+            proofModel.clearErrors()
+        }
+    }
+
+    // Ctrl+Shift+Return — add a premise line.
+    // Inserted at the current position when inside the premise block, or at
+    // the end of the premise block when the cursor is in the conclusions.
+    // NOTE: setPremiseCount() is private; premiseCount is recomputed
+    //       automatically by the postLineInsert signal connection.
+    Shortcut {
+        sequences: ["Ctrl+Shift+Return", "Meta+Shift+Return"]
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            var cur = listView.currentIndex
+            if (cur < 0) {
+                cConnector.evalText = "⚠ " + qsTr("No line selected.")
+                return
+            }
+            var insertIndex = (cur < proofModel.premiseCount)
+                              ? cur + 1 : proofModel.premiseCount
+            theData.insertLine(insertIndex, insertIndex + 1, "", "premise",
+                               false, false, false, 0, [-1])
+            proofModel.updateLines()
+            proofModel.updateRefs(insertIndex, true)
+            listView.currentIndex = insertIndex
+            // premiseCount is recomputed automatically via postLineInsert signal.
+            fileModified = true
+            cConnector.evalText = "Evaluate Proof"
+            proofModel.clearErrors()
+        }
+    }
+
+    // Ctrl+Delete / Cmd+Delete / Cmd+Backspace — remove the currently focused line.
+    // Cmd+Backspace covers compact Mac keyboards that lack a physical Delete key.
+    // If it is the very last line, resets to a blank premise so the UI never
+    // shows an empty proof.
+    // NOTE: setPremiseCount() is private; premiseCount is recomputed
+    //       automatically by the postLineRemove signal connection.
+    Shortcut {
+        sequences: ["Ctrl+Delete", "Meta+Delete", "Ctrl+Backspace"]
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            var cur = listView.currentIndex
+            if (cur < 0) {
+                cConnector.evalText = "⚠ " + qsTr("No line selected.")
+                return
+            }
+
+            if (listView.count > 1) {
+                theData.removeLineAt(cur)
+                proofModel.updateLines()
+                proofModel.updateRefs(cur, false)
+                listView.currentIndex = Math.min(cur, listView.count - 1)
+            } else {
+                // Last remaining line — reset to a blank premise.
+                theData.removeLineAt(0)
+                theData.insertLine(0, 1, "", "premise", false, false, false, 0, [-1])
+                proofModel.updateLines()
+                listView.currentIndex = 0
+            }
+            // premiseCount is recomputed automatically via postLineRemove signal.
+            fileModified = true
+            cConnector.evalText = "Evaluate Proof"
+            proofModel.clearErrors()
+        }
+    }
+
+    // Ctrl+Shift+X / Cmd+Shift+X — toggle the current line between premise and conclusion.
+    // (X represents eXchange. This avoids Chrome's Ctrl+T, OS-level Cmd+T, and 
+    // Wasm Ctrl+Alt/AltGraph dead-key issues).
+    //
+    // Rules (mirrors the +/– menu "Convert" action):
+    //   • Subproof / sf lines are ignored.
+    //   • The last remaining premise cannot be converted away.
+    //   • Boundary lines (no physical move needed) call toggleLineType() directly.
+    //   • Non-boundary lines call doConvertPremise / doConvertConclusion,
+    //     which physically move the row to the block boundary first.
+    //   • If a premise is referenced by other lines the warning dialog is shown.
+    Shortcut {
+        sequences: ["Ctrl+Shift+X", "Meta+Shift+X"]
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            var cur = listView.currentIndex
+            if (cur < 0) {
+                cConnector.evalText = "⚠ " + qsTr("No line selected.")
+                return
+            }
+
+            var curType = proofModel.data(proofModel.index(cur, 0), 258)  // TypeRole
+            var curLine = proofModel.data(proofModel.index(cur, 0), 256)  // LineRole (1-based)
+
+            // Refuse structural subproof / sf lines
+            if (curType === "sf" || curType === "subproof") {
+                cConnector.evalText = "⚠ " + qsTr("Cannot convert structural subproof lines.")
+                return
+            }
+
+            if (curType === "premise") {
+                // Must keep at least one premise
+                if (proofModel.premiseCount <= 1) {
+                    cConnector.evalText = "⚠ " + qsTr("Proof must contain at least one premise.")
+                    return
+                }
+
+                var refHolders = rootProofArea.findIncomingRefs(curLine)
+
+                if (cur === proofModel.premiseCount - 1) {
+                    // Boundary — no physical move needed; atomic toggle.
+                    if (refHolders !== "") {
+                        // Referenced lines — show confirmation dialog.
+                        convertWarningID.pendingIdx  = cur
+                        convertWarningID.pendingType = curType
+                        convertWarningID.refHolders  = refHolders
+                        convertWarningID.open()
+                    } else {
+                        proofModel.toggleLineType(cur)
+                        fileModified = true
+                        cConnector.evalText = "Evaluate Proof"
+                        proofModel.clearErrors()
+                    }
+                } else {
+                    // Non-boundary — physical move to block boundary required.
+                    if (refHolders !== "") {
+                        convertWarningID.pendingIdx  = cur
+                        convertWarningID.pendingType = curType
+                        convertWarningID.refHolders  = refHolders
+                        convertWarningID.open()
+                    } else {
+                        rootProofArea.doConvertPremise(cur)
+                    }
+                }
+            } else {
+                // conclusion → premise
+                if (cur === proofModel.premiseCount) {
+                    // Boundary — atomic toggle.
+                    proofModel.toggleLineType(cur)
+                    fileModified = true
+                    cConnector.evalText = "Evaluate Proof"
+                    proofModel.clearErrors()
+                } else {
+                    // Non-boundary — physical move to block boundary required.
+                    rootProofArea.doConvertConclusion(cur)
+                }
+            }
+        }
+    }
+
+
+
+    // End shortcuts
 
     // Right-click context menu (shared, one instance) 
 
@@ -401,8 +648,8 @@ Item {
             ScrollBar.vertical: ScrollBar {}
 
             onCurrentItemChanged: {
-                if (currentItem)
-                    currentItem.children[1].forceActiveFocus()
+                if (currentItem && currentItem.focusTextField)
+                    currentItem.focusTextField()
             }
         }
     }
@@ -443,6 +690,12 @@ Item {
                 var temp = listView.currentIndex
                 listView.currentIndex = -1
                 listView.currentIndex = temp
+            }
+
+            // Called by ListView.onCurrentItemChanged to focus this delegate's
+            // text field reliably without fragile children[] index traversal.
+            function focusTextField() {
+                theTextID.forceActiveFocus()
             }
 
             // Restore stored integer role values when language change resets combobox models.
@@ -555,6 +808,27 @@ Item {
                         rootProofArea.lastSelectedIndex = listView.count > 0 ? listView.count - 1 : -1
                         rootProofArea.forceActiveFocus()
                         event.accepted = true
+                    }
+                }
+
+                // Up arrow at cursor position 0 → move focus to the line above.
+                // Down arrow at end of text → move focus to the line below.
+                // This makes plain arrow keys navigate between lines naturally
+                // when there is no more text cursor movement possible.
+                Keys.onUpPressed: (event) => {
+                    if (cursorPosition === 0 && listView.currentIndex > 0) {
+                        listView.currentIndex--
+                        event.accepted = true
+                    } else {
+                        event.accepted = false
+                    }
+                }
+                Keys.onDownPressed: (event) => {
+                    if (cursorPosition === text.length && listView.currentIndex < listView.count - 1) {
+                        listView.currentIndex++
+                        event.accepted = true
+                    } else {
+                        event.accepted = false
                     }
                 }
 
