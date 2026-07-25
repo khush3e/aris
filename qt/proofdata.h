@@ -38,6 +38,7 @@ struct ProofLine{
     // pRuleIndex   : index within combo2[pRuleCategory].
     int pRuleCategory = -1;
     int pRuleIndex    = -1;
+    bool pCollapsed   = false;  // session-only: true when this sf row is collapsed
 };
 
 class ProofData : public QObject
@@ -62,6 +63,7 @@ public slots:
     void insertLine(int index, int a, QString b, QString c, bool d, bool e, bool f, int g, QList<int> h, int cat = -1, int idx = -1);
     void removeLineAt(int index);
     void setErrorAt(int index, const QString &msg);   // set inline error for a line
+    void setCollapsedAt(int index, bool collapsed);   // toggle subproof collapse state
     Q_INVOKABLE void reset();
 
 private:

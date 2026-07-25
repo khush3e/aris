@@ -114,6 +114,10 @@ QVariant ProofModel::data(const QModelIndex &index, int role) const
         return QVariant(someLine.pRuleCategory);
     case RuleIndexRole:
         return QVariant(someLine.pRuleIndex);
+    case CollapsedRole:
+        return QVariant(someLine.pCollapsed);
+    case HiddenRole:
+        return QVariant(isHiddenByCollapse(index.row()));
     }
     return QVariant();
 }
@@ -189,6 +193,12 @@ bool ProofModel::setData(const QModelIndex &index, const QVariant &value, int ro
             if (!name.isEmpty()) someLine.pType = name;
         }
         break;
+    case CollapsedRole:
+        // Handled by toggleCollapsed() — direct writes are a no-op.
+        return false;
+    case HiddenRole:
+        // Read-only computed role.
+        return false;
     }
 
     if (mLines->setLineAt(index.row(),someLine)) {
@@ -225,6 +235,8 @@ QHash<int, QByteArray> ProofModel::roleNames() const
     names[ErrorRole] = "errMsg";
     names[RuleCategoryRole] = "ruleCategory";
     names[RuleIndexRole]    = "ruleIndex";
+    names[CollapsedRole]    = "collapsed";
+    names[HiddenRole]       = "hidden";
     return names;
 }
 
@@ -403,4 +415,80 @@ void ProofModel::recomputePremiseCount()
             break;
     }
     setPremiseCount(count);
+}
+
+// Returns true if `row` is inside a currently collapsed subproof block.
+//
+// Subproof structure (indent units = 20px each level):
+//   parent scope at indent X
+//     sf row (pSubStart=true)  at indent X+20   ← same as content rows
+//     content rows             at indent X+20
+//     end row (pSubEnd=true)   at indent X
+//
+// Because the sf row sits at the SAME indent as the content rows, we walk
+// backward skipping only rows that are DEEPER (pInd > myInd), then check
+// the first pSubStart row at the same indent — if collapsed, we are hidden.
+bool ProofModel::isHiddenByCollapse(int row) const
+{
+    if (!mLines || row <= 0) return false;
+    const QVector<ProofLine> ls = mLines->lines();
+    const int myInd = ls.at(row).pInd;
+
+    // Rows at indent 0 can never be inside a subproof.
+    if (myInd <= 0) return false;
+
+    for (int i = row - 1; i >= 0; --i) {
+        const ProofLine &pl = ls.at(i);
+
+        // Skip rows that are deeper — they are inside a nested subproof
+        // and cannot be the opener for the current row.
+        if (pl.pInd > myInd) continue;
+
+        // A subproof-start at the same indent level is the direct opener.
+        // If it is collapsed → this row is hidden; if expanded → visible.
+        if (pl.pSubStart && pl.pInd == myInd)
+            return pl.pCollapsed;
+
+        // Hit a row at a strictly lower indent without finding an sf opener
+        // → we are not inside any subproof at this level.
+        if (pl.pInd < myInd)
+            return false;
+
+        // Same-indent non-sf row — keep walking backward.
+    }
+    return false;
+}
+
+// Toggle the pCollapsed flag on a subproof-start (sf) row and notify QML.
+// Emits CollapsedRole on the sf row (updates the chevron ▶/▼) and
+// HiddenRole on every row inside the block so their height/visible update.
+void ProofModel::toggleCollapsed(int row)
+{
+    if (!mLines || row < 0 || row >= mLines->lines().size()) return;
+
+    const QVector<ProofLine> ls = mLines->lines();
+    const ProofLine &sf = ls.at(row);
+
+    // Only act on subproof-start rows.
+    if (!sf.pSubStart) return;
+
+    const bool newVal = !sf.pCollapsed;
+    mLines->setCollapsedAt(row, newVal);
+
+    // Find the matching subproof-end.
+    // The sf row is at indent sfInd; its matching end row is at sfInd - 20.
+    const int totalRows = mLines->lines().size();
+    const int sfInd     = sf.pInd;
+    int endRow = row;
+    for (int i = row + 1; i < totalRows; ++i) {
+        const ProofLine &pl = mLines->lines().at(i);
+        endRow = i;
+        if (pl.pSubEnd && pl.pInd == (sfInd - 20))
+            break;
+    }
+
+    // Notify QML: chevron on the sf row, hidden state on every inner row.
+    emit dataChanged(index(row, 0), index(row, 0), {CollapsedRole});
+    if (endRow > row)
+        emit dataChanged(index(row + 1, 0), index(endRow, 0), {HiddenRole});
 }

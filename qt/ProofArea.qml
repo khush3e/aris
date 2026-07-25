@@ -662,6 +662,13 @@ Item {
             width: parent ? parent.width : 0
             spacing: 0
 
+            // When this row is inside a collapsed subproof, hide it AND zero
+            // its height so the ListView allocates no space for it (visible:false
+            // alone still reserves height, leaving blank gaps).
+            visible: !model.hidden
+            height:  visible ? implicitHeight : 0
+            clip:    true
+
             // Properties here so ALL descendants (RowLayout + Text) can access by bare name
             property bool editCombos: (!isExtFile || type === "choose")
             property var arr: model.refs
@@ -674,6 +681,10 @@ Item {
             // `model` refers to the combo's own string-array model, NOT the row data.
             property int savedRuleCategory: model.ruleCategory
             property int savedRuleIndex:    model.ruleIndex
+            // Indentation helpers — used by the spacer and chevron inside RowLayout.
+            // U = one indent unit (scaledSpacing*2, zoom-aware). depth = nesting level.
+            readonly property real indentUnit: scaledSpacing * 2
+            readonly property int  depthLevel: model.ind / 20
             property string textFieldColor: {
                 if (rootProofArea.selectedIndices.includes(indexx)) {
                     return darkMode ? "#5C469C" : "#E6E6FA"
@@ -715,6 +726,55 @@ Item {
                 spacing: scaledSpacing
                 width: parent.width
                 Layout.fillWidth: true
+
+                // ── Indentation ─────────────────────────────────────────────
+                // Indent unit U = scaledSpacing*2 per nesting level (zoom-aware).
+                // depth = model.ind / 20.
+                //
+                // sf rows:      spacer = (depth-1)*U + chevron(U) → depth*U total
+                // content rows: spacer =  depth*U                 → depth*U total
+                //
+                // All line numbers at the same depth land at the same x position.
+                Item {
+                    width:  Math.round((outerColumn.depthLevel - (model.subSt ? 1 : 0))
+                                       * outerColumn.indentUnit)
+                    height: 1
+                }
+
+                // Collapse chevron — only on sf rows; always exactly one indentUnit wide.
+                // ▶ = collapsed, ▼ = expanded.
+                Button {
+                    id: collapseToggleID
+                    visible: model.subSt === true
+                    width:   visible ? Math.round(outerColumn.indentUnit) : 0
+                    height:  theTextID.height
+
+                    // Always-visible background — subtle rounded rect, not flat.
+                    background: Rectangle {
+                        radius: 4
+                        color: collapseToggleID.pressed
+                               ? (darkMode ? "#3A3040" : "#C8C8D0")
+                               : (darkMode ? "#2A2530" : "#E0E0E8")
+                    }
+
+                    // Use a Text item so we can set color explicitly (button text
+                    // color can blend into the background depending on the theme).
+                    contentItem: Text {
+                        text:              model.collapsed ? "\u25B6" : "\u25BC"
+                        font.pointSize:    Math.max(8, scaledFontSize * 0.7)
+                        font.bold:         false
+                        color:             darkMode ? "#B0A8C0" : "#505060"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment:   Text.AlignVCenter
+                    }
+
+                    hoverEnabled: true
+                    ToolTip.visible: hovered
+                    ToolTip.delay: 600
+                    ToolTip.text: model.collapsed ? qsTr("Expand subproof") : qsTr("Collapse subproof")
+                    onClicked: proofModel.toggleCollapsed(indexx)
+                }
+
 
             // Line Number Button
             Button {
@@ -795,7 +855,6 @@ Item {
                 color: darkMode ? "white" : "black"
                 height: scaledFontSize + scaledSpacing
                 font.pointSize: scaledFontSize
-                Layout.leftMargin: model.ind
                 Layout.fillWidth: true
 
                 Keys.onPressed: (event) => {

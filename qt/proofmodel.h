@@ -42,7 +42,9 @@ public:
         RefsRole,
         ErrorRole,      // carries pErrorMsg — "errMsg" in QML
         RuleCategoryRole,   // int 0-4 — locale-invariant outer combo index
-        RuleIndexRole       // int 0-N — locale-invariant inner combo index
+        RuleIndexRole,      // int 0-N — locale-invariant inner combo index
+        CollapsedRole,      // bool — true when this sf row is collapsed
+        HiddenRole          // bool (computed) — true when inside a collapsed subproof
     };
 
     // Basic functionality:
@@ -72,14 +74,18 @@ public:
 
     
     Q_INVOKABLE bool toggleLineType(int row);
-
     Q_INVOKABLE void recomputePremiseCount();
+    // Toggle collapsed state for a subproof-start row and refresh visibility
+    // of every row inside that block.  Safe to call from QML.
+    Q_INVOKABLE void toggleCollapsed(int row);
 
 signals:
     void premiseCountChanged(int n);
 
 private:
     void setPremiseCount(int n);
+    // Returns true if `row` is inside a currently collapsed subproof block.
+    bool isHiddenByCollapse(int row) const;
     ProofData *mLines;
     int  mPremiseCount = 1;
 

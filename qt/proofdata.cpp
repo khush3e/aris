@@ -41,7 +41,8 @@ bool ProofData::setLineAt(int index, const ProofLine &proofLine)
         && oldLine.pType == proofLine.pType && oldLine.pRefs == proofLine.pRefs \
         && oldLine.pErrorMsg == proofLine.pErrorMsg \
         && oldLine.pRuleCategory == proofLine.pRuleCategory \
-        && oldLine.pRuleIndex == proofLine.pRuleIndex)
+        && oldLine.pRuleIndex == proofLine.pRuleIndex \
+        && oldLine.pCollapsed == proofLine.pCollapsed)
     {
         return false;
     }
@@ -104,4 +105,13 @@ void ProofData::setErrorAt(int index, const QString &msg)
     if (index < 0 || index >= m_proofLines.size())
         return;
     m_proofLines[index].pErrorMsg = msg;
+}
+
+// Set the collapsed state for a subproof-start row at the given 0-based index.
+// Bypasses setLineAt so it can never be silently dropped by the equality check.
+void ProofData::setCollapsedAt(int index, bool collapsed)
+{
+    if (index < 0 || index >= m_proofLines.size())
+        return;
+    m_proofLines[index].pCollapsed = collapsed;
 }
