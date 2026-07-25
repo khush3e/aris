@@ -431,6 +431,26 @@ ApplicationWindow {
     }
 
     FileDialog {
+        id: exportTextID
+
+        nameFilters: ["Text files (*.txt)"]
+        title: "Export as Text"
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "txt"
+        onAccepted: auxConnector.exportText(selectedFile, theData)
+    }
+
+    FileDialog {
+        id: exportMarkdownID
+
+        nameFilters: ["Markdown files (*.md)"]
+        title: "Export as Markdown"
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "md"
+        onAccepted: auxConnector.exportMarkdown(selectedFile, theData)
+    }
+
+    FileDialog {
         id: importID
 
         nameFilters: ["Aris files (*.tle)"]
@@ -675,6 +695,96 @@ ApplicationWindow {
                     }
 
                     onClicked: startImportFlow(2)
+                }
+            }
+        }
+    }
+
+    // Export format picker — same style as importBehaviorID.
+    Dialog {
+        id: exportFormatID
+
+        width: Math.min(rootID.width * 0.42, 440)
+        anchors.centerIn: parent
+
+        parent: Overlay.overlay
+        modal: true
+        closePolicy: Popup.CloseOnEscape
+        padding: 20
+
+        Overlay.modal: Rectangle {
+            color: darkMode ? "#66121212" : "#66CFCFCF"
+        }
+
+        background: Rectangle {
+            radius: 12
+            color: darkMode ? "#1F1B24" : "white"
+            border.width: 1
+            border.color: darkMode ? "#50485A" : "#D9D9D9"
+        }
+
+        contentItem: ColumnLayout {
+            width: exportFormatID.availableWidth
+            spacing: 20
+
+            Label {
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                text: qsTr("Choose export format")
+                color: darkMode ? "white" : "black"
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 14
+
+                Button {
+                    text: qsTr("LaTeX")
+                    Layout.fillWidth: true
+                    palette {
+                        button: darkMode ? "#2A2631" : "white"
+                        buttonText: darkMode ? "white" : "black"
+                    }
+                    onClicked: {
+                        exportFormatID.close()
+                        if (Qt.platform.os === "wasm")
+                            auxConnector.wasmLatex(theData, cConnector)
+                        else
+                            latexID.open()
+                    }
+                }
+
+                Button {
+                    text: qsTr("Plain Text")
+                    Layout.fillWidth: true
+                    palette {
+                        button: darkMode ? "#2A2631" : "white"
+                        buttonText: darkMode ? "white" : "black"
+                    }
+                    onClicked: {
+                        exportFormatID.close()
+                        if (Qt.platform.os === "wasm")
+                            auxConnector.wasmExportText(theData)
+                        else
+                            exportTextID.open()
+                    }
+                }
+
+                Button {
+                    text: qsTr("Markdown")
+                    Layout.fillWidth: true
+                    palette {
+                        button: darkMode ? "#2A2631" : "white"
+                        buttonText: darkMode ? "white" : "black"
+                    }
+                    onClicked: {
+                        exportFormatID.close()
+                        if (Qt.platform.os === "wasm")
+                            auxConnector.wasmExportMarkdown(theData)
+                        else
+                            exportMarkdownID.open()
+                    }
                 }
             }
         }

@@ -401,3 +401,212 @@ void auxConnector::newWindow()
     delete myProcess;
 }
 #endif
+
+// Plain-text export helper
+
+/* Builds a plain-text representation of one ProofLine.
+ *  depth   = pInd / 20 (0 = top-level, 1 = one subproof deep, …)
+ *  prefix  = box-drawing hint: "┌─" for sf rows, "└─" for the last row
+ *            before a subproof end, "" for everything else.
+ *  Returns a single formatted line with trailing newline.
+ */
+static QString proofLineToText(const ProofLine &pl, int depth, const QString &prefix)
+{
+    // Skip the closing subproof sentinel row — the └─ line already closes it.
+    if (pl.pSubEnd)
+        return QString();
+
+    // Indent: 2 spaces per depth level, then the box-drawing prefix.
+    QString indent = QString("  ").repeated(depth);
+    if (!prefix.isEmpty())
+        indent += prefix + " ";
+    else if (depth > 0)
+        indent += "  ";          // align content rows with the box interior
+
+    // Line number, right-aligned in a 3-char field.
+    QString lineNum = QString::number(pl.pLine).rightJustified(3);
+
+    // Build refs string: "1, 2, 3" (skip sentinel -1).
+    QStringList refStrs;
+    for (int r : pl.pRefs)
+        if (r != -1) refStrs << QString::number(r);
+    QString refs = refStrs.join(", ");
+
+    // Rule / type label (omit for sf rows — the box-drawing says enough).
+    QString rule;
+    if (pl.pSubStart)
+        rule = "(subproof start)";
+    else if (!pl.pType.isEmpty() && pl.pType != "choose")
+        rule = pl.pType + (refs.isEmpty() ? "" : ": " + refs);
+
+    // Compose: "  ┌─  3.  P → Q          [→ Elim: 1, 2]"
+    QString formula = pl.pText.isEmpty() ? "(empty)" : pl.pText;
+    QString left    = indent + lineNum + ".  " + formula;
+    QString ruleTag = rule.isEmpty() ? "" : "  [" + rule + "]";
+
+    // Pad the formula area to a fixed column so rule tags align.
+    const int targetCol = 60;
+    if (left.length() < targetCol)
+        left = left.leftJustified(targetCol);
+
+    return left + ruleTag + "\n";
+}
+
+/* Exports the proof to a plain-text file.
+ *  Reads directly from ProofData — no C engine call needed.
+ *  input:
+ *    name - absolute file path (may have "file://" prefix).
+ *    pd   - pointer to the ProofData object.
+ *  output:
+ *    none (emits errorOccurred on failure).
+ */
+void auxConnector::exportText(const QString &name, const ProofData *pd)
+{
+    QString path = name.startsWith("file://") ? name.mid(7) : name;
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        emit errorOccurred(tr("Text export failed: could not open '%1' for writing.").arg(path));
+        return;
+    }
+
+    QTextStream out(&file);
+    out.setEncoding(QStringConverter::Utf8);
+
+    const QVector<ProofLine> &lines = pd->lines();
+    const int n = lines.size();
+
+    // Pre-compute which rows are "last before a subproof end" so we can
+    // add the └─ prefix to them.
+    QSet<int> closingRows;
+    for (int i = 1; i < n; ++i)
+        if (lines.at(i).pSubEnd)
+            closingRows.insert(i - 1);
+
+    out << "Proof\n" << QString("=").repeated(72) << "\n\n";
+
+    for (int i = 0; i < n; ++i) {
+        const ProofLine &pl = lines.at(i);
+        int depth = pl.pInd / 20;
+
+        QString prefix;
+        if (pl.pSubStart)
+            prefix = "\u250c\u2500";                   // ┌─
+        else if (closingRows.contains(i))
+            prefix = "\u2514\u2500";                   // └─
+
+        QString row = proofLineToText(pl, depth, prefix);
+        if (!row.isEmpty())
+            out << row;
+    }
+
+    out << "\n" << QString("=").repeated(72) << "\n";
+    file.close();
+    qDebug() << "[ARIS] exportText: wrote" << path;
+}
+
+/* Exports the proof to a plain-text file (WebAssembly).
+ *  Writes to a temp file then triggers browser download.
+ */
+void auxConnector::wasmExportText(const ProofData *pd)
+{
+    exportText("aris_export_tmp.txt", pd);
+    QFile file("aris_export_tmp.txt");
+    if (file.open(QIODevice::ReadOnly)) {
+        QFileDialog::saveFileContent(file.readAll(), "proof.txt");
+        file.close();
+    }
+    QFile::remove("aris_export_tmp.txt");
+}
+
+//  Markdown export helper
+
+/* Exports the proof to a Markdown file (.md).
+ *  Produces a GitHub-renderable table where the Formula column is
+ *  padded with non-breaking spaces (&#160;) for nesting depth.
+ *  Subproof start/end rows become visual separator rows in the table.
+ *  input:
+ *    name - absolute file path.
+ *    pd   - pointer to the ProofData object.
+ *  output:
+ *    none (emits errorOccurred on failure).
+ */
+void auxConnector::exportMarkdown(const QString &name, const ProofData *pd)
+{
+    QString path = name.startsWith("file://") ? name.mid(7) : name;
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        emit errorOccurred(tr("Markdown export failed: could not open '%1' for writing.").arg(path));
+        return;
+    }
+
+    QTextStream out(&file);
+    out.setEncoding(QStringConverter::Utf8);
+
+    const QVector<ProofLine> &lines = pd->lines();
+    const int n = lines.size();
+
+    out << "# Proof\n\n";
+    out << "| # | Formula | Rule | Refs |\n";
+    out << "|---|---------|------|------|\n";
+
+    for (int i = 0; i < n; ++i) {
+        const ProofLine &pl = lines.at(i);
+        int depth = pl.pInd / 20;
+
+        // Non-breaking space indent (4 per level) for the formula column.
+        QString nbsp  = QString("&nbsp;").repeated(depth * 4);
+
+        if (pl.pSubStart) {
+            // Subproof opening row — show as a light separator with label.
+            out << "| | " << nbsp << "*subproof start* | | |\n";
+            continue;
+        }
+        if (pl.pSubEnd) {
+            // Subproof closing row — show as a light separator.
+            out << "| | " << nbsp << "*subproof end* | | |\n";
+            continue;
+        }
+
+        // Regular line.
+        QString lineNum = QString::number(pl.pLine);
+        QString formula = pl.pText.isEmpty() ? "*(empty)*" : pl.pText;
+
+        // Rule label (blank for premises displayed as "premise").
+        QString rule = (pl.pType == "premise") ? "premise" : pl.pType;
+        if (rule == "choose") rule = "";
+
+        // Refs: "1, 2" (skip -1 sentinel).
+        QStringList refStrs;
+        for (int r : pl.pRefs)
+            if (r != -1) refStrs << QString::number(r);
+        QString refs = refStrs.join(", ");
+
+        // Escape pipe characters in formula so the table doesn't break.
+        formula.replace("|", "\\|");
+        rule.replace("|", "\\|");
+
+        out << "| " << lineNum
+            << " | " << nbsp << formula
+            << " | " << rule
+            << " | " << refs
+            << " |\n";
+    }
+
+    out << "\n*Generated by GNU Aris*\n";
+    file.close();
+    qDebug() << "[ARIS] exportMarkdown: wrote" << path;
+}
+
+/* Exports the proof to a Markdown file (WebAssembly).
+ *  Writes to a temp file then triggers browser download.
+ */
+void auxConnector::wasmExportMarkdown(const ProofData *pd)
+{
+    exportMarkdown("aris_export_tmp.md", pd);
+    QFile file("aris_export_tmp.md");
+    if (file.open(QIODevice::ReadOnly)) {
+        QFileDialog::saveFileContent(file.readAll(), "proof.md");
+        file.close();
+    }
+    QFile::remove("aris_export_tmp.md");
+}
