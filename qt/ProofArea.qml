@@ -275,6 +275,29 @@ Item {
         }
     }
 
+    // Ctrl+Shift+M / Meta+Shift+M — add a comment line.
+    Shortcut {
+        sequences: ["Ctrl+Shift+M", "Meta+Shift+M"]
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            var cur = listView.currentIndex
+            if (cur < 0) {
+                cConnector.evalText = "⚠ " + qsTr("No line selected.")
+                return
+            }
+            var insertIndex = cur + 1
+            var curInd = proofModel.data(proofModel.index(cur, 0), 262)
+            theData.insertLine(insertIndex, insertIndex + 1, "", "comment",
+                               false, false, false, curInd, [-1])
+            proofModel.updateLines()
+            proofModel.updateRefs(insertIndex, true)
+            listView.currentIndex = insertIndex
+            fileModified = true
+            cConnector.evalText = "Evaluate Proof"
+            proofModel.clearErrors()
+        }
+    }
+
     // Ctrl+Delete / Cmd+Delete / Cmd+Backspace — remove the currently focused line.
     // Cmd+Backspace covers compact Mac keyboards that lack a physical Delete key.
     // If it is the very last line, resets to a blank premise so the UI never
@@ -480,6 +503,24 @@ Item {
                 var curInd = proofModel.data(proofModel.index(myIdx, 0), 262)
                 theData.insertLine(myIdx + 1, myIdx + 2, "", "choose",
                                    curSub, false, false, curInd, [-1])
+                proofModel.updateLines()
+                proofModel.updateRefs(myIdx + 1, true)
+                listView.currentIndex = myIdx + 1
+                fileModified = true
+                cConnector.evalText = "Evaluate Proof"
+                proofModel.clearErrors()
+            }
+        }
+
+        // Add Comment below 
+        Action {
+            text: qsTr("Add Comment Below")
+            onTriggered: {
+                var myIdx = rootProofArea.contextMenuTargetIdx
+                if (myIdx < 0) return
+                var curInd = proofModel.data(proofModel.index(myIdx, 0), 262)
+                theData.insertLine(myIdx + 1, myIdx + 2, "", "comment",
+                                   false, false, false, curInd, [-1])
                 proofModel.updateLines()
                 proofModel.updateRefs(myIdx + 1, true)
                 listView.currentIndex = myIdx + 1
@@ -715,7 +756,7 @@ Item {
             property string type: model.type
             property int indexx: model.index
             property bool vis: type === "premise" || type === "subproof"
-                               || type === "sf"
+                               || type === "sf" || type === "comment"
             // These delegate-level ints mirror the ProofModel roles.
             // They must live here (not inside a ComboBox) because inside a ComboBox,
             // `model` refers to the combo's own string-array model, NOT the row data.
@@ -819,6 +860,7 @@ Item {
             // Line Number Button
             Button {
                 id: lineNumberID
+                visible: type !== "comment"
 
                 Layout.preferredHeight: theTextID.height
                 // Content-aware width: at least as tall as it is wide (square),
@@ -892,9 +934,10 @@ Item {
             TextField {
                 id: theTextID
 
-                color: darkMode ? "white" : "black"
+                color: type === "comment" ? (darkMode ? "#808080" : "#888888") : (darkMode ? "white" : "black")
                 height: scaledFontSize + scaledSpacing
                 font.pointSize: scaledFontSize
+                font.italic: type === "comment"
                 Layout.fillWidth: true
 
                 Keys.onPressed: (event) => {
@@ -935,13 +978,15 @@ Item {
                     id: backRectID
                     border.width: 1
                     border.color: {
+                        if (type === "comment")
+                            return darkMode ? "#2A2A1E" : "#FFFDE7"
                         if (cConnector.evalText === "Evaluate Proof")
                             return darkMode ? "white" : "black"
                         if (model.errMsg !== "")
                             return "red"
                         return "springgreen"
                     }
-                    color: textFieldColor
+                    color: type === "comment" ? (darkMode ? "#2A2A1E" : "#FFFDE7") : textFieldColor
                 }
 
                 //placeholderText: indexx === 0 ? qsTr("Start Typing here..."): ""
@@ -1103,6 +1148,7 @@ Item {
                 font.pointSize: scaledFontSize
                 // Short form when zoomed in (>150%) so label stays compact
                 text: {
+                    if (model.type === "comment") return "//"
                     if (zoomFactor > 1.5) {
                         if (model.type === "premise")  return "P"
                         if (model.type === "subproof") return "SP"
@@ -1360,6 +1406,20 @@ Item {
                         onTriggered: {
                             theData.insertLine(index + 1, index + 2, "",
                                                "choose", model.sub, false,
+                                               false, model.ind, [-1])
+                            proofModel.updateLines()
+                            proofModel.updateRefs(index + 1, true)
+                            listView.currentIndex = index + 1
+                            cConnector.evalText = "Evaluate Proof"
+                            proofModel.clearErrors()
+                        }
+                    }
+
+                    Action {
+                        text: qsTr("Add Comment")
+                        onTriggered: {
+                            theData.insertLine(index + 1, index + 2, "",
+                                               "comment", false, false,
                                                false, model.ind, [-1])
                             proofModel.updateLines()
                             proofModel.updateRefs(index + 1, true)

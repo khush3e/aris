@@ -32,7 +32,6 @@
 #include <QTextDocumentWriter>
 #ifndef Q_OS_WASM
 #include <QPrinter>
-#include <QPrintEngine>
 #endif
 
 #ifndef Q_OS_WASM
@@ -444,12 +443,18 @@ static QString proofLineToText(const ProofLine &pl, int depth, const QString &pr
     QString rule;
     if (pl.pSubStart)
         rule = "(subproof start)";
+    else if (pl.pType == QLatin1String("comment"))
+        rule = "";
     else if (!pl.pType.isEmpty() && pl.pType != "choose")
         rule = pl.pType + (refs.isEmpty() ? "" : ": " + refs);
 
     // Compose: "  ┌─  3.  P → Q          [→ Elim: 1, 2]"
     QString formula = pl.pText.isEmpty() ? "(empty)" : pl.pText;
-    QString left    = indent + lineNum + ".  " + formula;
+    if (pl.pType == QLatin1String("comment")) formula = "// " + pl.pText;
+    
+    QString left = (pl.pType == QLatin1String("comment")) ? 
+                   (indent + "      " + formula) : 
+                   (indent + lineNum + ".  " + formula);
     QString ruleTag = rule.isEmpty() ? "" : "  [" + rule + "]";
 
     // Pad the formula area to a fixed column so rule tags align.
@@ -574,6 +579,12 @@ void auxConnector::exportMarkdown(const QString &name, const ProofData *pd)
             out << "| | " << nbsp << "*subproof end* | | |\n";
             continue;
         }
+        if (pl.pType == QLatin1String("comment")) {
+            QString commentText = pl.pText;
+            commentText.replace("|", "\\|");
+            out << "| | " << nbsp << "*// " << commentText << "* | | |\n";
+            continue;
+        }
 
         // Regular line.
         QString lineNum = QString::number(pl.pLine);
@@ -688,13 +699,17 @@ static QTextDocument *buildProofDocument(const ProofData *pd)
             formula = indent + QStringLiteral("\u250c\u2500 subproof");  // ┌─
         else if (pl.pSubEnd)
             formula = indent + QStringLiteral("\u2514\u2500");            // └─
+        else if (pl.pType == QLatin1String("comment"))
+            formula = indent + QStringLiteral("// ") + pl.pText;
         else
             formula = indent + (pl.pText.isEmpty() ? QStringLiteral("(empty)") : pl.pText);
 
         // Rule
         QString rule;
-        if (!pl.pSubStart && !pl.pSubEnd)
+        if (!pl.pSubStart && !pl.pSubEnd && pl.pType != QLatin1String("comment")) {
             rule = (pl.pType == QLatin1String("premise")) ? QStringLiteral("premise") : pl.pType;
+            if (rule == QLatin1String("choose")) rule = QString();
+        }
 
         // Refs
         QStringList refStrs;
@@ -702,13 +717,16 @@ static QTextDocument *buildProofDocument(const ProofData *pd)
             if (r != -1) refStrs << QString::number(r);
         QString refs = refStrs.join(QStringLiteral(", "));
 
-        auto insertCell = [&](int col, const QString &txt) {
+        auto insertCell = [&](int col, const QString &txt, bool italic = false) {
             QTextCursor c = table->cellAt(i + 1, col).firstCursorPosition();
-            c.insertText(txt, normalFmt);
+            QTextCharFormat f = normalFmt;
+            if (italic) f.setFontItalic(true);
+            if (pl.pType == QLatin1String("comment")) f.setForeground(QColor(128, 128, 128));
+            c.insertText(txt, f);
         };
 
-        insertCell(0, pl.pSubStart || pl.pSubEnd ? QString() : QString::number(pl.pLine));
-        insertCell(1, formula);
+        insertCell(0, pl.pSubStart || pl.pSubEnd || pl.pType == QLatin1String("comment") ? QString() : QString::number(pl.pLine));
+        insertCell(1, formula, pl.pType == QLatin1String("comment"));
         insertCell(2, rule);
         insertCell(3, refs);
     }

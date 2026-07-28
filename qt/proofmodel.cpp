@@ -289,30 +289,42 @@ void ProofModel::updateLines()
 // Update relevant reference roles after insertion and/or removal of a proof line
 void ProofModel::updateRefs(int ln, bool op)
 {
+    qDebug() << "[ProofModel] updateRefs called with ln =" << ln << "op =" << op;
     for (int i = ln+1; i < mLines->lines().size(); i++){
         QList<int> refs = mLines->lines().at(i).pRefs;
+        bool changed = false;
 
         for (int ii = 1; ii < refs.size(); ii++){
-
             if (op){
-                if (refs[ii] >= (ln+1))
+                if (refs[ii] >= (ln+1)) {
+                    qDebug() << "[ProofModel] row" << i << "incrementing ref" << refs[ii] << "to" << refs[ii] + 1;
                     refs[ii]++;
-
+                    changed = true;
+                }
             }
             else{
-                if (refs[ii] == (ln + 1))
+                if (refs[ii] == (ln + 1)) {
+                    qDebug() << "[ProofModel] row" << i << "removing ref" << refs[ii];
                     refs.removeAt(ii);
-                else if (refs[ii] > (ln + 1))
+                    changed = true;
+                    ii--; // Adjust index after removal
+                }
+                else if (refs[ii] > (ln + 1)) {
+                    qDebug() << "[ProofModel] row" << i << "decrementing ref" << refs[ii] << "to" << refs[ii] - 1;
                     refs[ii]--;
-
+                    changed = true;
+                }
             }
         }
-        QList<QVariant> ret;
-        for (int x: refs)
-            ret.append(x);
-        setData(index(i,0),ret,RefsRole);
+        
+        if (changed) {
+            QList<QVariant> ret;
+            for (int x: refs)
+                ret.append(x);
+            setData(index(i,0),ret,RefsRole);
+            qDebug() << "[ProofModel] setData called for row" << i << "new refs:" << ret;
+        }
     }
-
 }
 
 // Clear all inline error messages in the model (called before each evaluation).
