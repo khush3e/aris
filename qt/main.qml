@@ -431,6 +431,26 @@ ApplicationWindow {
     }
 
     FileDialog {
+        id: exportTextID
+
+        nameFilters: ["Text files (*.txt)"]
+        title: "Export as Text"
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "txt"
+        onAccepted: auxConnector.exportText(selectedFile, theData)
+    }
+
+    FileDialog {
+        id: exportMarkdownID
+
+        nameFilters: ["Markdown files (*.md)"]
+        title: "Export as Markdown"
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "md"
+        onAccepted: auxConnector.exportMarkdown(selectedFile, theData)
+    }
+
+    FileDialog {
         id: importID
 
         nameFilters: ["Aris files (*.tle)"]
@@ -680,6 +700,96 @@ ApplicationWindow {
         }
     }
 
+    // Export format picker — same style as importBehaviorID.
+    Dialog {
+        id: exportFormatID
+
+        width: Math.min(rootID.width * 0.42, 440)
+        anchors.centerIn: parent
+
+        parent: Overlay.overlay
+        modal: true
+        closePolicy: Popup.CloseOnEscape
+        padding: 20
+
+        Overlay.modal: Rectangle {
+            color: darkMode ? "#66121212" : "#66CFCFCF"
+        }
+
+        background: Rectangle {
+            radius: 12
+            color: darkMode ? "#1F1B24" : "white"
+            border.width: 1
+            border.color: darkMode ? "#50485A" : "#D9D9D9"
+        }
+
+        contentItem: ColumnLayout {
+            width: exportFormatID.availableWidth
+            spacing: 20
+
+            Label {
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                text: qsTr("Choose export format")
+                color: darkMode ? "white" : "black"
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 14
+
+                Button {
+                    text: qsTr("LaTeX")
+                    Layout.fillWidth: true
+                    palette {
+                        button: darkMode ? "#2A2631" : "white"
+                        buttonText: darkMode ? "white" : "black"
+                    }
+                    onClicked: {
+                        exportFormatID.close()
+                        if (Qt.platform.os === "wasm")
+                            auxConnector.wasmLatex(theData, cConnector)
+                        else
+                            latexID.open()
+                    }
+                }
+
+                Button {
+                    text: qsTr("Plain Text")
+                    Layout.fillWidth: true
+                    palette {
+                        button: darkMode ? "#2A2631" : "white"
+                        buttonText: darkMode ? "white" : "black"
+                    }
+                    onClicked: {
+                        exportFormatID.close()
+                        if (Qt.platform.os === "wasm")
+                            auxConnector.wasmExportText(theData)
+                        else
+                            exportTextID.open()
+                    }
+                }
+
+                Button {
+                    text: qsTr("Markdown")
+                    Layout.fillWidth: true
+                    palette {
+                        button: darkMode ? "#2A2631" : "white"
+                        buttonText: darkMode ? "white" : "black"
+                    }
+                    onClicked: {
+                        exportFormatID.close()
+                        if (Qt.platform.os === "wasm")
+                            auxConnector.wasmExportMarkdown(theData)
+                        else
+                            exportMarkdownID.open()
+                    }
+                }
+            }
+        }
+    }
+
     GoalModel {
         id: goalDataID
         glines: theGoals
@@ -713,6 +823,146 @@ ApplicationWindow {
             cConnector.smartCopy(theData, proofID.selectedIndices)
         }
     }
+
+    //  Global workflow shortcuts
+    
+    //  Ctrl+Shift+E (Cmd+Shift+E on macOS) — Evaluate proof.
+    Shortcut {
+        sequence: "Ctrl+Shift+E" // Cmd+Shift+E on macOS — avoids Emacs "end-of-line" conflict
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            cConnector.evalText = "Evaluate Proof"
+            cConnector.evalProof(theData, theGoals, proofModel)
+            goalDataID.evalGoals(theGoals, cConnector)
+        }
+    }
+
+    // Ctrl+G — Open the Goals dialog.
+    Shortcut {
+        sequence: "Ctrl+G" //cmd + G for mac os
+        context: Qt.ApplicationShortcut
+        onActivated: goalDialogID.open()
+    }
+
+    // Ctrl+J — Open the jump-to-line dialog.
+    Shortcut {
+        sequence: "Ctrl+J" //cmd+j for mac os
+        context: Qt.ApplicationShortcut
+        onActivated: jumpDialogID.open()
+    }
+
+    // Jump-to-line dialog — opened by Ctrl+J.
+    Dialog {
+        id: jumpDialogID
+
+        title: qsTr("Jump to Line")
+        width: Math.min(rootID.width * 0.30, 300)
+        anchors.centerIn: parent
+
+        parent: Overlay.overlay
+        modal: true
+        closePolicy: Popup.CloseOnEscape
+        padding: 20
+
+        function attemptJump() {
+            var lineNum = parseInt(jumpLineInputID.text, 10)
+            if (isNaN(lineNum) || lineNum < 1 || lineNum > proofID.listViewCount) {
+                jumpErrorMsgID.text = qsTr("Invalid line number. Must be between 1 and ") + proofID.listViewCount
+                jumpErrorMsgID.visible = true
+            } else {
+                jumpErrorMsgID.visible = false
+                proofID.jumpToLine(lineNum - 1)
+                jumpDialogID.close()
+                jumpLineInputID.text = ""
+            }
+        }
+
+        Overlay.modal: Rectangle {
+            color: darkMode ? "#66121212" : "#66CFCFCF"
+        }
+
+        background: Rectangle {
+            radius: 12
+            color: darkMode ? "#1F1B24" : "white"
+            border.width: 1
+            border.color: darkMode ? "#50485A" : "#D9D9D9"
+        }
+
+        contentItem: ColumnLayout {
+            width: jumpDialogID.availableWidth
+            spacing: 16
+
+            Label {
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                text: qsTr("Line number")
+                color: darkMode ? "white" : "black"
+                font.bold: true
+            }
+
+            TextField {
+                id: jumpLineInputID
+                Layout.fillWidth: true
+                placeholderText: "1 – " + proofID.listViewCount
+                inputMethodHints: Qt.ImhDigitsOnly
+                validator: IntValidator { bottom: 1; top: 9999 }
+                color: darkMode ? "white" : "black"
+                background: Rectangle {
+                    border.width: 1
+                    border.color: darkMode ? "#BB86FC" : "#6200EE"
+                    radius: 6
+                    color: darkMode ? "#2A2631" : "white"
+                }
+                Keys.onReturnPressed: jumpDialogID.attemptJump()
+                onTextChanged: jumpErrorMsgID.visible = false
+                Component.onCompleted: {
+                    if (jumpDialogID.visible) forceActiveFocus()
+                }
+            }
+
+            Label {
+                id: jumpErrorMsgID
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                color: darkMode ? "#CF6679" : "red"
+                font.pointSize: Math.max(10, thefont.pointSize - 1)
+                visible: false
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 12
+
+                Button {
+                    text: qsTr("Cancel")
+                    Layout.fillWidth: true
+                    palette {
+                        button: darkMode ? "#2A2631" : "white"
+                        buttonText: darkMode ? "white" : "black"
+                    }
+                    onClicked: jumpDialogID.close()
+                }
+
+                Button {
+                    text: qsTr("Jump")
+                    Layout.fillWidth: true
+                    palette {
+                        button: darkMode ? "#BB86FC" : "#6200EE"
+                        buttonText: "white"
+                    }
+                    onClicked: jumpDialogID.attemptJump()
+                }
+            }
+        }
+
+        onOpened: {
+            jumpLineInputID.text = ""
+            jumpErrorMsgID.visible = false
+            jumpLineInputID.forceActiveFocus()
+        }
+    }
+
+    // End global shortcuts 
 
     ProofArea {
         id: proofID

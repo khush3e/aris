@@ -110,16 +110,12 @@ ToolBar {
         }
 
         ToolButton {
-            text: qsTr("Export To LaTeX")
+            text: qsTr("Export")
             icon.name: "export"
             icon.color: darkMode ? "white" : "black"
 
             onClicked: {
-                if (Qt.platform.os === "wasm")
-                    auxConnector.wasmLatex(theData, cConnector)
-                else
-                    latexID.open()
-
+                exportFormatID.open()
                 menuOptions.close()
             }
         }

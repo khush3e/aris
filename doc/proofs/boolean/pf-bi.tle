@@ -9,7 +9,7 @@
   <entry n="2" t="A | ^"/>
  </premises>
  <conclusions>
-  <entry n="3" l="31" r="1" d="0" t="B"/>
-  <entry n="4" l="31" r="2" d="0" t="A"/>
+  <entry n="3" l="34" r="1" d="0" t="B"/>
+  <entry n="4" l="34" r="2" d="0" t="A"/>
  </conclusions>
 </proof>

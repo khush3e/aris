@@ -28,6 +28,14 @@ Item {
     property var selectedIndices: []
     property int lastSelectedIndex: -1
 
+    // Public API consumed by main.qml (jump-to-line dialog, Ctrl+J)
+    readonly property int listViewCount: listView.count
+    function jumpToLine(idx) {
+        if (idx < 0 || idx >= listView.count) return
+        listView.currentIndex = idx
+        listView.positionViewAtIndex(idx, ListView.Center)
+    }
+
     // Returns a human-readable string listing every conclusion line whose
     // refs array contains `lineNum` (1-based).  Empty string = no incoming refs.
     function findIncomingRefs(lineNum) {
@@ -36,7 +44,7 @@ Item {
         for (var i = 0; i < n; i++) {
             var refs = proofModel.data(proofModel.index(i, 0), 263)  // RefsRole
             if (refs && Array.from(refs).indexOf(lineNum) !== -1)
-                holders.push(proofModel.data(proofModel.index(i, 0), 256) + 1)  // LineRole (1-based display)
+                holders.push(proofModel.data(proofModel.index(i, 0), 256))  // LineRole is already 1-based
         }
         return holders.length === 0 ? "" : holders.join(", ")
     }
@@ -49,6 +57,12 @@ Item {
         var pSubSt  = proofModel.data(proofModel.index(myIdx, 0), 260)  // SubStartRole
         var pSubEnd = proofModel.data(proofModel.index(myIdx, 0), 261)  // SubEndRole
         var pInd    = proofModel.data(proofModel.index(myIdx, 0), 262)  // IndentRole
+        var pLine   = proofModel.data(proofModel.index(myIdx, 0), 256)  // LineRole (1-based)
+
+        // Scrub all incoming refs to this line from every other row BEFORE
+        // the physical remove+reinsert so no row ends up self-referencing.
+        // Uses C++ directly to avoid QVariant conversion issues from QML.
+        proofModel.clearRefsToLine(pLine)
 
         theData.removeLineAt(myIdx)
         proofModel.updateLines()
@@ -71,7 +85,11 @@ Item {
     // Edge-case conversion: move conclusion at myIdx to the boundary, then convert.
     // Called when the line is NOT the first conclusion (requires a physical move).
     function doConvertConclusion(myIdx) {
-        var cText = proofModel.data(proofModel.index(myIdx, 0), 257)  // TextRole
+        var cText  = proofModel.data(proofModel.index(myIdx, 0), 257)  // TextRole
+        var cLine  = proofModel.data(proofModel.index(myIdx, 0), 256)  // LineRole (1-based)
+
+        // Scrub all incoming refs to this conclusion before moving it.
+        proofModel.clearRefsToLine(cLine)
 
         theData.removeLineAt(myIdx)
         proofModel.updateLines()
@@ -146,6 +164,235 @@ Item {
             }
         }
     }
+
+    // ── Navigation: move focus one line at a time ─────────────────────────
+    // Alt+Up / Alt+Down = Option+Up / Option+Down on macOS.
+    // These are the only bindings for focus movement — Ctrl/Cmd are reserved
+    // for the jump-to-first/last shortcuts below.
+    Shortcut {
+        sequences: ["Alt+Up"]
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            if (listView.count > 0)
+                listView.currentIndex = Math.max(0, listView.currentIndex - 1)
+        }
+    }
+    Shortcut {
+        sequences: ["Alt+Down"]
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            if (listView.count > 0)
+                listView.currentIndex = Math.min(listView.count - 1,
+                                                  listView.currentIndex + 1)
+        }
+    }
+
+    // ── Navigation: jump to first / last line ─────────────────────────────
+    // Ctrl+Home  / Ctrl+End  = standard Windows/Linux.
+    // Ctrl+Up    / Ctrl+Down = Cmd+Up / Cmd+Down on macOS (standard macOS
+    //   document navigation: Command+Up jumps to top, Command+Down to bottom).
+    Shortcut {
+        sequences: ["Ctrl+Home", "Ctrl+Up"]
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            if (listView.count > 0) {
+                listView.currentIndex = 0
+                listView.positionViewAtBeginning()
+            }
+        }
+    }
+    Shortcut {
+        sequences: ["Ctrl+End", "Ctrl+Down"]
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            if (listView.count > 0) {
+                listView.currentIndex = listView.count - 1
+                listView.positionViewAtEnd()
+            }
+        }
+    }
+
+    // Ctrl+Return / Cmd+Return — add a conclusion line.
+    // If the current line is a premise, inserts at the end of the premise
+    // block (right after the last premise) so the new conclusion is always
+    // in the correct structural position.
+    // If the current line is already a conclusion, inserts immediately below.
+    Shortcut {
+        sequences: ["Ctrl+Return", "Meta+Return"]
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            var cur = listView.currentIndex
+            if (cur < 0) {
+                cConnector.evalText = "⚠ " + qsTr("No line selected.")
+                return
+            }
+            var curType = proofModel.data(proofModel.index(cur, 0), 258)  // TypeRole
+            var curSub  = proofModel.data(proofModel.index(cur, 0), 259)  // SubRole
+            var curInd  = proofModel.data(proofModel.index(cur, 0), 262)  // IndentRole
+
+            // If on a premise line, always insert right after the last premise
+            // so the new line lands cleanly in the conclusion block.
+            var insertAt = (curType === "premise")
+                           ? proofModel.premiseCount
+                           : cur + 1
+
+            theData.insertLine(insertAt, insertAt + 1, "", "choose",
+                               curSub, false, false, curInd, [-1])
+            proofModel.updateLines()
+            proofModel.updateRefs(insertAt, true)
+            listView.currentIndex = insertAt
+            fileModified = true
+            cConnector.evalText = "Evaluate Proof"
+            proofModel.clearErrors()
+        }
+    }
+
+    // Ctrl+Shift+Return — add a premise line.
+    // Inserted at the current position when inside the premise block, or at
+    // the end of the premise block when the cursor is in the conclusions.
+    // NOTE: setPremiseCount() is private; premiseCount is recomputed
+    //       automatically by the postLineInsert signal connection.
+    Shortcut {
+        sequences: ["Ctrl+Shift+Return", "Meta+Shift+Return"]
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            var cur = listView.currentIndex
+            if (cur < 0) {
+                cConnector.evalText = "⚠ " + qsTr("No line selected.")
+                return
+            }
+            var insertIndex = (cur < proofModel.premiseCount)
+                              ? cur + 1 : proofModel.premiseCount
+            theData.insertLine(insertIndex, insertIndex + 1, "", "premise",
+                               false, false, false, 0, [-1])
+            proofModel.updateLines()
+            proofModel.updateRefs(insertIndex, true)
+            listView.currentIndex = insertIndex
+            // premiseCount is recomputed automatically via postLineInsert signal.
+            fileModified = true
+            cConnector.evalText = "Evaluate Proof"
+            proofModel.clearErrors()
+        }
+    }
+
+    // Ctrl+Delete / Cmd+Delete / Cmd+Backspace — remove the currently focused line.
+    // Cmd+Backspace covers compact Mac keyboards that lack a physical Delete key.
+    // If it is the very last line, resets to a blank premise so the UI never
+    // shows an empty proof.
+    // NOTE: setPremiseCount() is private; premiseCount is recomputed
+    //       automatically by the postLineRemove signal connection.
+    Shortcut {
+        sequences: ["Ctrl+Delete", "Meta+Delete", "Ctrl+Backspace"]
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            var cur = listView.currentIndex
+            if (cur < 0) {
+                cConnector.evalText = "⚠ " + qsTr("No line selected.")
+                return
+            }
+
+            if (listView.count > 1) {
+                theData.removeLineAt(cur)
+                proofModel.updateLines()
+                proofModel.updateRefs(cur, false)
+                listView.currentIndex = Math.min(cur, listView.count - 1)
+            } else {
+                // Last remaining line — reset to a blank premise.
+                theData.removeLineAt(0)
+                theData.insertLine(0, 1, "", "premise", false, false, false, 0, [-1])
+                proofModel.updateLines()
+                listView.currentIndex = 0
+            }
+            // premiseCount is recomputed automatically via postLineRemove signal.
+            fileModified = true
+            cConnector.evalText = "Evaluate Proof"
+            proofModel.clearErrors()
+        }
+    }
+
+    // Ctrl+Shift+X / Cmd+Shift+X — toggle the current line between premise and conclusion.
+    // (X represents eXchange. This avoids Chrome's Ctrl+T, OS-level Cmd+T, and 
+    // Wasm Ctrl+Alt/AltGraph dead-key issues).
+    //
+    // Rules (mirrors the +/– menu "Convert" action):
+    //   • Subproof / sf lines are ignored.
+    //   • The last remaining premise cannot be converted away.
+    //   • Boundary lines (no physical move needed) call toggleLineType() directly.
+    //   • Non-boundary lines call doConvertPremise / doConvertConclusion,
+    //     which physically move the row to the block boundary first.
+    //   • If a premise is referenced by other lines the warning dialog is shown.
+    Shortcut {
+        sequences: ["Ctrl+Shift+X", "Meta+Shift+X"]
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            var cur = listView.currentIndex
+            if (cur < 0) {
+                cConnector.evalText = "⚠ " + qsTr("No line selected.")
+                return
+            }
+
+            var curType = proofModel.data(proofModel.index(cur, 0), 258)  // TypeRole
+            var curLine = proofModel.data(proofModel.index(cur, 0), 256)  // LineRole (1-based)
+
+            // Refuse structural subproof / sf lines
+            if (curType === "sf" || curType === "subproof") {
+                cConnector.evalText = "⚠ " + qsTr("Cannot convert structural subproof lines.")
+                return
+            }
+
+            if (curType === "premise") {
+                // Must keep at least one premise
+                if (proofModel.premiseCount <= 1) {
+                    cConnector.evalText = "⚠ " + qsTr("Proof must contain at least one premise.")
+                    return
+                }
+
+                var refHolders = rootProofArea.findIncomingRefs(curLine)
+
+                if (cur === proofModel.premiseCount - 1) {
+                    // Boundary — no physical move needed; atomic toggle.
+                    if (refHolders !== "") {
+                        // Referenced lines — show confirmation dialog.
+                        convertWarningID.pendingIdx  = cur
+                        convertWarningID.pendingType = curType
+                        convertWarningID.refHolders  = refHolders
+                        convertWarningID.open()
+                    } else {
+                        proofModel.toggleLineType(cur)
+                        fileModified = true
+                        cConnector.evalText = "Evaluate Proof"
+                        proofModel.clearErrors()
+                    }
+                } else {
+                    // Non-boundary — physical move to block boundary required.
+                    if (refHolders !== "") {
+                        convertWarningID.pendingIdx  = cur
+                        convertWarningID.pendingType = curType
+                        convertWarningID.refHolders  = refHolders
+                        convertWarningID.open()
+                    } else {
+                        rootProofArea.doConvertPremise(cur)
+                    }
+                }
+            } else {
+                // conclusion → premise
+                if (cur === proofModel.premiseCount) {
+                    // Boundary — atomic toggle.
+                    proofModel.toggleLineType(cur)
+                    fileModified = true
+                    cConnector.evalText = "Evaluate Proof"
+                    proofModel.clearErrors()
+                } else {
+                    // Non-boundary — physical move to block boundary required.
+                    rootProofArea.doConvertConclusion(cur)
+                }
+            }
+        }
+    }
+
+
+
+    // End shortcuts
 
     // Right-click context menu (shared, one instance) 
 
@@ -401,8 +648,8 @@ Item {
             ScrollBar.vertical: ScrollBar {}
 
             onCurrentItemChanged: {
-                if (currentItem)
-                    currentItem.children[1].forceActiveFocus()
+                if (currentItem && currentItem.focusTextField)
+                    currentItem.focusTextField()
             }
         }
     }
@@ -414,6 +661,13 @@ Item {
             id: outerColumn
             width: parent ? parent.width : 0
             spacing: 0
+
+            // When this row is inside a collapsed subproof, hide it AND zero
+            // its height so the ListView allocates no space for it (visible:false
+            // alone still reserves height, leaving blank gaps).
+            visible: !model.hidden
+            height:  visible ? implicitHeight : 0
+            clip:    true
 
             // Properties here so ALL descendants (RowLayout + Text) can access by bare name
             property bool editCombos: (!isExtFile || type === "choose")
@@ -427,6 +681,10 @@ Item {
             // `model` refers to the combo's own string-array model, NOT the row data.
             property int savedRuleCategory: model.ruleCategory
             property int savedRuleIndex:    model.ruleIndex
+            // Indentation helpers — used by the spacer and chevron inside RowLayout.
+            // U = one indent unit (scaledSpacing*2, zoom-aware). depth = nesting level.
+            readonly property real indentUnit: scaledSpacing * 2
+            readonly property int  depthLevel: model.ind / 20
             property string textFieldColor: {
                 if (rootProofArea.selectedIndices.includes(indexx)) {
                     return darkMode ? "#5C469C" : "#E6E6FA"
@@ -443,6 +701,12 @@ Item {
                 var temp = listView.currentIndex
                 listView.currentIndex = -1
                 listView.currentIndex = temp
+            }
+
+            // Called by ListView.onCurrentItemChanged to focus this delegate's
+            // text field reliably without fragile children[] index traversal.
+            function focusTextField() {
+                theTextID.forceActiveFocus()
             }
 
             // Restore stored integer role values when language change resets combobox models.
@@ -462,6 +726,55 @@ Item {
                 spacing: scaledSpacing
                 width: parent.width
                 Layout.fillWidth: true
+
+                // ── Indentation ─────────────────────────────────────────────
+                // Indent unit U = scaledSpacing*2 per nesting level (zoom-aware).
+                // depth = model.ind / 20.
+                //
+                // sf rows:      spacer = (depth-1)*U + chevron(U) → depth*U total
+                // content rows: spacer =  depth*U                 → depth*U total
+                //
+                // All line numbers at the same depth land at the same x position.
+                Item {
+                    width:  Math.round((outerColumn.depthLevel - (model.subSt ? 1 : 0))
+                                       * outerColumn.indentUnit)
+                    height: 1
+                }
+
+                // Collapse chevron — only on sf rows; always exactly one indentUnit wide.
+                // ▶ = collapsed, ▼ = expanded.
+                Button {
+                    id: collapseToggleID
+                    visible: model.subSt === true
+                    width:   visible ? Math.round(outerColumn.indentUnit) : 0
+                    height:  theTextID.height
+
+                    // Always-visible background — subtle rounded rect, not flat.
+                    background: Rectangle {
+                        radius: 4
+                        color: collapseToggleID.pressed
+                               ? (darkMode ? "#3A3040" : "#C8C8D0")
+                               : (darkMode ? "#2A2530" : "#E0E0E8")
+                    }
+
+                    // Use a Text item so we can set color explicitly (button text
+                    // color can blend into the background depending on the theme).
+                    contentItem: Text {
+                        text:              model.collapsed ? "\u25B6" : "\u25BC"
+                        font.pointSize:    Math.max(8, scaledFontSize * 0.7)
+                        font.bold:         false
+                        color:             darkMode ? "#B0A8C0" : "#505060"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment:   Text.AlignVCenter
+                    }
+
+                    hoverEnabled: true
+                    ToolTip.visible: hovered
+                    ToolTip.delay: 600
+                    ToolTip.text: model.collapsed ? qsTr("Expand subproof") : qsTr("Collapse subproof")
+                    onClicked: proofModel.toggleCollapsed(indexx)
+                }
+
 
             // Line Number Button
             Button {
@@ -542,7 +855,6 @@ Item {
                 color: darkMode ? "white" : "black"
                 height: scaledFontSize + scaledSpacing
                 font.pointSize: scaledFontSize
-                Layout.leftMargin: model.ind
                 Layout.fillWidth: true
 
                 Keys.onPressed: (event) => {
@@ -555,6 +867,27 @@ Item {
                         rootProofArea.lastSelectedIndex = listView.count > 0 ? listView.count - 1 : -1
                         rootProofArea.forceActiveFocus()
                         event.accepted = true
+                    }
+                }
+
+                // Up arrow at cursor position 0 → move focus to the line above.
+                // Down arrow at end of text → move focus to the line below.
+                // This makes plain arrow keys navigate between lines naturally
+                // when there is no more text cursor movement possible.
+                Keys.onUpPressed: (event) => {
+                    if (cursorPosition === 0 && listView.currentIndex > 0) {
+                        listView.currentIndex--
+                        event.accepted = true
+                    } else {
+                        event.accepted = false
+                    }
+                }
+                Keys.onDownPressed: (event) => {
+                    if (cursorPosition === text.length && listView.currentIndex < listView.count - 1) {
+                        listView.currentIndex++
+                        event.accepted = true
+                    } else {
+                        event.accepted = false
                     }
                 }
 
@@ -655,6 +988,7 @@ Item {
 
                 // Implementation for Keyboard Macros
                 onTextChanged: {
+                    let replaced = false;
 
                     // TODO: Improve implementation later
                     if (theTextID.length >= 2) {
@@ -663,15 +997,42 @@ Item {
                         if (last_two.includes('/\\')) {
                             theTextID.remove(cursorPosition - 2, cursorPosition)
                             theTextID.insert(cursorPosition, "\u2227")
+                            replaced = true;
                         } else if (last_two.includes('\\/')) {
                             theTextID.remove(cursorPosition - 2, cursorPosition)
                             theTextID.insert(cursorPosition, "\u2228")
+                            replaced = true;
                         } else if (last_two.includes('->')) {
                             theTextID.remove(cursorPosition - 2, cursorPosition)
                             theTextID.insert(cursorPosition, "\u2192")
+                            replaced = true;
                         } else if (last_two.includes('<' + "\u2192")) {
                             theTextID.remove(cursorPosition - 2, cursorPosition)
                             theTextID.insert(cursorPosition, "\u2194")
+                            replaced = true;
+                        }
+                    }
+
+                    if (!replaced && theTextID.length >= 1) {
+                        const last_one = text.slice(cursorPosition - 1, cursorPosition)
+                        let replacement = "";
+                        switch (last_one) {
+                            case '^': replacement = "\u2295"; break; // XOR
+                            case '&': replacement = "\u2227"; break; // AND
+                            case '|': replacement = "\u2228"; break; // OR
+                            case '~': replacement = "\u00AC"; break; // NOT
+                            case '$': replacement = "\u2192"; break; // CON
+                            case '%': replacement = "\u2194"; break; // BIC
+                            case '@': replacement = "\u2200"; break; // UNV
+                            case '#': replacement = "\u2203"; break; // EXL
+                            case '!': replacement = "\u22A4"; break; // TAU
+                            case '?': replacement = "\u22A5"; break; // CTR
+                            case ':': replacement = "\u2208"; break; // ELM
+                            case '>': replacement = "\u2349"; break; // NIL
+                        }
+                        if (replacement !== "") {
+                            theTextID.remove(cursorPosition - 1, cursorPosition)
+                            theTextID.insert(cursorPosition, replacement)
                         }
                     }
                 }

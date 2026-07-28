@@ -10,8 +10,8 @@
   <entry n="2" t="P(a) &amp; (Q(i) | (Q(i) &amp; A(q)))  ;; Operating on sentence parts."/>
  </premises>
  <conclusions>
-  <entry n="3" l="17" r="1" d="0" t="A"/>
-  <entry n="4" l="17" r="2" d="0" t="P(a) &amp; Q(i)"/>
-  <entry n="5" l="17" r="3" d="0" t="A | (A &amp; C)"/>
+  <entry n="3" l="19" r="1" d="0" t="A"/>
+  <entry n="4" l="19" r="2" d="0" t="P(a) &amp; Q(i)"/>
+  <entry n="5" l="19" r="3" d="0" t="A | (A &amp; C)"/>
  </conclusions>
 </proof>

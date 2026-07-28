@@ -30,6 +30,15 @@ public:
 
     Q_INVOKABLE void latex(const QString &name, const ProofData *toBeEval , Connector *c);
     Q_INVOKABLE void wasmLatex(const ProofData *pd, Connector *c);
+
+    // Plain-text export (desktop + WASM)
+    Q_INVOKABLE void exportText(const QString &name, const ProofData *pd);
+    Q_INVOKABLE void wasmExportText(const ProofData *pd);
+
+    // Markdown export (desktop + WASM)
+    Q_INVOKABLE void exportMarkdown(const QString &name, const ProofData *pd);
+    Q_INVOKABLE void wasmExportMarkdown(const ProofData *pd);
+
     Q_INVOKABLE void importProof(const QString &name, ProofData *pd, const Connector *c, ProofModel *pm);
     Q_INVOKABLE void wasmImportProof(ProofData *pd, const Connector *c, ProofModel *pm);
     Q_INVOKABLE void importProofWithMode(const QString &name, ProofData *pd, const Connector *c, ProofModel *pm, int mode);

@@ -17,12 +17,12 @@
   <entry n="6" t="~#z(P(z) | Q(z)) ; A more complicated version."/>
  </premises>
  <conclusions>
-  <entry n="7" l="9" r="1" d="0" t="~A | ~B"/>
-  <entry n="8" l="9" r="2" d="0" t="~~A &amp; ~B"/>
-  <entry n="9" l="9" r="3" d="0" t="~(C | D)"/>
-  <entry n="10" l="9" r="4" d="0" t="A(a) &amp; (~C(a) &amp; ~D(a))"/>
-  <entry n="11" l="9" r="5" d="0" t="#x(~P(x))"/>
-  <entry n="12" l="9" r="6" d="0" t="@z(~(P(z) | Q(z)))"/>
-  <entry n="13" l="9" r="12" d="0" t="@z(~P(z) &amp; ~Q(z))"/>
+  <entry n="7" l="11" r="1" d="0" t="~A | ~B"/>
+  <entry n="8" l="11" r="2" d="0" t="~~A &amp; ~B"/>
+  <entry n="9" l="11" r="3" d="0" t="~(C | D)"/>
+  <entry n="10" l="11" r="4" d="0" t="A(a) &amp; (~C(a) &amp; ~D(a))"/>
+  <entry n="11" l="11" r="5" d="0" t="#x(~P(x))"/>
+  <entry n="12" l="11" r="6" d="0" t="@z(~(P(z) | Q(z)))"/>
+  <entry n="13" l="11" r="12" d="0" t="@z(~P(z) &amp; ~Q(z))"/>
  </conclusions>
 </proof>
