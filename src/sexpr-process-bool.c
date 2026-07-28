@@ -98,7 +98,7 @@ proc_bi (unsigned char * prem, unsigned char * conc)
     {
       si--;
       if (si < 0)
-    return _("Boolean Identity Error: Expected simplification or expansion with True/False constants.");
+    return _("Boolean Identity Error: The difference must be enclosed by a connective, not at the very start of the sentence.");
     }
   else if (si > 0
        && (!strncmp (sh_sen + si - 1, S_AND, S_CL)
@@ -133,7 +133,7 @@ proc_bi (unsigned char * prem, unsigned char * conc)
     return NULL;
 
       if (li < 0)
-    return _("Boolean Identity Error: Expected simplification or expansion with True/False constants.");
+    return _("Boolean Identity Error: Could not align the longer sentence's structure with the point of difference.");
 
       if (si < 0)
     {
@@ -144,7 +144,7 @@ proc_bi (unsigned char * prem, unsigned char * conc)
     }
 
   if (ln_sen[li] != '(')
-    return _("Boolean Identity Error: Expected simplification or expansion with True/False constants.");
+    return _("Boolean Identity Error: The longer sentence must have a connective at the point of difference.");
 
   int tmp_pos;
   unsigned char * tmp_str;
@@ -232,7 +232,7 @@ with a disjunction.");
   if (ret_str == NO_DIFFERENCE || ret_str == CORRECT)
     return CORRECT;
 
-  return _("Boolean Identity Error: Expected simplification or expansion with True/False constants.");
+  return _("Boolean Identity Error: Simplifying or expanding the True/False constant does not produce a sentence matching the other line.");
 }
 
 char *

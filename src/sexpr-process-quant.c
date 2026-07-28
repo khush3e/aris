@@ -413,7 +413,7 @@ proc_nq (unsigned char * prem, unsigned char * conc)
     if (ln_sen[i] != '(' && strncmp (ln_sen + i - 1, S_UNV, S_CL)
         && strncmp (ln_sen + i - 1, S_EXL, S_CL) && !islower (ln_sen[i]))
     {
-        return _("Null Quantifier constructed incorrectly.");
+        return _("Null Quantifier Error: The point of difference must be a quantifier with no free occurrences of its variable.");
     }
 
     if (ln_sen[i] == '(')
@@ -445,7 +445,7 @@ proc_nq (unsigned char * prem, unsigned char * conc)
             return NULL;
 
         if (!tmp_str)
-            return _("Null Quantifier constructed incorrectly.");
+            return _("Null Quantifier Error: Could not find a matching connective enclosing the quantifier.");
     }
     else
     {
@@ -508,7 +508,7 @@ proc_nq (unsigned char * prem, unsigned char * conc)
     if (ret_str == NO_DIFFERENCE || ret_str == CORRECT)
         return CORRECT;
 
-    return _("Null Quantifier constructed incorrectly.");
+    return _("Null Quantifier Error: Removing the quantifier does not produce a sentence matching the other line.");
 }
 
 char *
@@ -544,14 +544,14 @@ proc_pr (unsigned char * prem, unsigned char * conc)
     int tmp_pos;
 
     if (i == 0)
-        return _("Prenex constructed incorrectly.");
+        return _("Prenex Error: The quantifier must be preceded by a connective for it to be moved.");
 
     tmp_pos = parse_parens (sh_sen, i - 1, &tmp_str);
     if (tmp_pos == AEC_MEM)
         return NULL;
 
     if (!tmp_str)
-        return _("Prenex constructed incorrectly.");
+        return _("Prenex Error: Could not find a matching connective enclosing the quantifier.");
 
     unsigned char * scope, * var, quant[S_CL + 1];
     int v_len;
@@ -560,7 +560,7 @@ proc_pr (unsigned char * prem, unsigned char * conc)
     if (!scope)
         return NULL;
     if (scope[0] == '\0')
-        return _("Prenex constructed incorrectly.");
+        return _("Prenex Error: The quantifier's scope must not be empty.");
     v_len = strlen (var);
     free (tmp_str);
 
@@ -707,7 +707,7 @@ proc_pr (unsigned char * prem, unsigned char * conc)
     if (ret_str == NO_DIFFERENCE || ret_str == CORRECT)
         return CORRECT;
 
-    return _("Prenex constructed incorrectly.");
+    return _("Prenex Error: Moving the quantifier does not produce a sentence matching the other line.");
 }
 
 char *
@@ -774,7 +774,7 @@ proc_fv (unsigned char * prem_0, unsigned char * prem_1, unsigned char * conc)
         if (ret_0 == 0 || ret_1 == 0)
             return CORRECT;
 
-        return _("Free Variable substitution constructed incorrectly.");
+        return _("Free Variable Substitution Error: Neither premise's substitution matches the conclusion.");
     }
     else if (first_0)
     {
@@ -799,5 +799,5 @@ proc_fv (unsigned char * prem_0, unsigned char * prem_1, unsigned char * conc)
     if (ret == 0)
         return CORRECT;
 
-    return _("Free Variable Substitution constructed incorrectly.");
+    return _("Free Variable Substitution Error: The substitution does not match the conclusion.");
 }

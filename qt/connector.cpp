@@ -36,6 +36,7 @@
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QRegularExpression>
+#include <QCoreApplication>
 
 #ifdef Q_OS_WASM
 #include <emscripten.h>
@@ -259,6 +260,9 @@ void Connector::genProof(const ProofData *toBeEval)
     for (int i = 0; i < snap.size(); i++) {
         const ProofLine &pl = snap.at(i);   // const-ref into the snapshot — zero copies
 
+        if (pl.pType == QLatin1String("comment"))
+            continue; // Skip comments entirely so the C-engine doesn't see them
+
         int *ind = (int *) calloc(m_indices[i].size(), sizeof(int));
         short *temp_refs = (short *) calloc(pl.pRefs.size(), sizeof(short));
 
@@ -295,12 +299,24 @@ void Connector::genProof(const ProofData *toBeEval)
             conn = 0;
         }
 
-        // Assign references
+        // Map UI labels to logical line indices (1-based) for the C-engine evaluator
+        // because the engine treats refs as raw indices into its linked list!
+        QHash<int, int> uiToLogical;
+        int logicalCounter = 1;
+        for (int i = 0; i < snap.size(); i++) {
+            if (snap.at(i).pType != QLatin1String("comment")) {
+                uiToLogical.insert(snap.at(i).pLine, logicalCounter++);
+            }
+        }
+
+        // Assign references mapped to logical indices
         if (pl.pRefs.size() == 1) {
             temp_refs[0] = REF_END;
         } else {
-            for (int ii = 1; ii < pl.pRefs.size(); ii++)
-                temp_refs[ii - 1] = pl.pRefs.at(ii);
+            for (int ii = 1; ii < pl.pRefs.size(); ii++) {
+                int uiRef = pl.pRefs.at(ii);
+                temp_refs[ii - 1] = uiToLogical.value(uiRef, uiRef); // fallback to raw if not found
+            }
             temp_refs[pl.pRefs.size() - 1] = REF_END;
         }
 
@@ -386,20 +402,24 @@ int Connector::evalProof(const ProofData *toBeEval, const GoalData *gls, ProofMo
             anyError = true;
 
             // Build "Line N · RuleName: <message>" for inline display.
-            int lineNum     = i + 1;
-            QString ruleName = reverseRulesMap.value(sd->rule, QStringLiteral("?"));
+            int lineNum     = sd->line_num;
+            int uiRow       = lineNum - 1;
+            // Rule names are translated under the "ProofArea" context, matching the
+            // qsTr() calls used for the same rule names in the rule dropdown (ProofArea.qml).
+            QString ruleEnglish = reverseRulesMap.value(sd->rule, QStringLiteral("?"));
+            QString ruleName = QCoreApplication::translate("ProofArea", ruleEnglish.toUtf8().constData());
             QString message  = QString::fromUtf8(cur_ret);
-            QString fullMsg  = QStringLiteral("Line %1 · %2: %3")
+            QString fullMsg  = tr("Line %1 · %2: %3")
                                    .arg(lineNum)
                                    .arg(ruleName)
                                    .arg(message);
 
             // Write error text directly into the model row (0-based).
-            pm->setData(pm->index(i, 0), fullMsg, ProofModel::ErrorRole);
+            pm->setData(pm->index(uiRow, 0), fullMsg, ProofModel::ErrorRole);
 
             qDebug() << "[eval] Error line" << lineNum << "(" << ruleName << ") -" << message;
         } else {
-            qDebug() << "[eval] Line" << i + 1 << ": Correct!";
+            qDebug() << "[eval] Line" << sd->line_num << ": Correct!";
         }
 
         ev_itr = ev_itr->next;
@@ -435,6 +455,25 @@ void Connector::saveProof(const QString &name, const ProofData *toBeSaved, const
 
     if (aio_save(cProof,(const char *) file_name) == 0) {
         qDebug() << "File Saved Successfully";
+        // Append comments as a UI-only data block inside the XML
+        QFile file(localName);
+        if (file.open(QIODevice::ReadWrite | QIODevice::Text)) {
+            QString content = file.readAll();
+            QString commentsXml;
+            for (int i = 0; i < toBeSaved->lines().size(); ++i) {
+                const ProofLine &pl = toBeSaved->lines().at(i);
+                if (pl.pType == QLatin1String("comment")) {
+                    commentsXml += QString("  <comment idx=\"%1\" t=\"%2\" ind=\"%3\"/>\n")
+                                   .arg(i).arg(pl.pText.toHtmlEscaped()).arg(pl.pInd);
+                }
+            }
+            if (!commentsXml.isEmpty()) {
+                content.replace("</proof>", "<ui_data>\n" + commentsXml + "</ui_data>\n</proof>");
+                file.resize(0);
+                file.write(content.toUtf8());
+            }
+            file.close();
+        }
     } else {
         m_lastError = tr("File save failed for path: %1").arg(localName);
         qDebug() << m_lastError;
@@ -511,6 +550,25 @@ void Connector::openProof(const QString &name, ProofData *openTo, GoalData *gls)
                            sd->depth * 20, temp_refs,
                            ci.first, ci.second);
         d = sd->depth;
+    }
+
+    // Load comments from the UI-only data block
+    QFile file(localName);
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QString content = QString::fromUtf8(file.readAll());
+        file.close();
+        
+        QRegularExpression re("<comment idx=\"(\\d+)\" t=\"([^\"]*)\" ind=\"(\\d+)\"/>");
+        QRegularExpressionMatchIterator matchIt = re.globalMatch(content);
+        while (matchIt.hasNext()) {
+            QRegularExpressionMatch match = matchIt.next();
+            int idx = match.captured(1).toInt();
+            QString t = match.captured(2);
+            t.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("&quot;", "\"").replace("&#39;", "'");
+            int ind = match.captured(3).toInt();
+            QList<int> dummyRefs = {-1};
+            openTo->insertLine(idx, idx+1, t.toUtf8().constData(), "comment", false, false, false, ind, dummyRefs, -1, -1);
+        }
     }
 
     int g = gls->glines().size();

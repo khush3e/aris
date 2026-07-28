@@ -275,6 +275,29 @@ Item {
         }
     }
 
+    // Ctrl+Shift+M / Meta+Shift+M — add a comment line.
+    Shortcut {
+        sequences: ["Ctrl+Shift+M", "Meta+Shift+M"]
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            var cur = listView.currentIndex
+            if (cur < 0) {
+                cConnector.evalText = "⚠ " + qsTr("No line selected.")
+                return
+            }
+            var insertIndex = cur + 1
+            var curInd = proofModel.data(proofModel.index(cur, 0), 262)
+            theData.insertLine(insertIndex, insertIndex + 1, "", "comment",
+                               false, false, false, curInd, [-1])
+            proofModel.updateLines()
+            proofModel.updateRefs(insertIndex, true)
+            listView.currentIndex = insertIndex
+            fileModified = true
+            cConnector.evalText = "Evaluate Proof"
+            proofModel.clearErrors()
+        }
+    }
+
     // Ctrl+Delete / Cmd+Delete / Cmd+Backspace — remove the currently focused line.
     // Cmd+Backspace covers compact Mac keyboards that lack a physical Delete key.
     // If it is the very last line, resets to a blank premise so the UI never
@@ -489,6 +512,24 @@ Item {
             }
         }
 
+        // Add Comment below 
+        Action {
+            text: qsTr("Add Comment Below")
+            onTriggered: {
+                var myIdx = rootProofArea.contextMenuTargetIdx
+                if (myIdx < 0) return
+                var curInd = proofModel.data(proofModel.index(myIdx, 0), 262)
+                theData.insertLine(myIdx + 1, myIdx + 2, "", "comment",
+                                   false, false, false, curInd, [-1])
+                proofModel.updateLines()
+                proofModel.updateRefs(myIdx + 1, true)
+                listView.currentIndex = myIdx + 1
+                fileModified = true
+                cConnector.evalText = "Evaluate Proof"
+                proofModel.clearErrors()
+            }
+        }
+
         MenuSeparator {}
 
         // Remove line 
@@ -640,6 +681,12 @@ Item {
             delegate: proofLineID
             highlight: highlightID
 
+            // Disable auto-scroll-to-current so the user can freely scroll
+            // the proof after zooming.  Without this, forceLayout() (called on
+            // zoom) causes the ListView to re-pin the view onto the focused line,
+            // making it impossible to scroll away from it.
+            highlightFollowsCurrentItem: false
+
             currentIndex: -1
 
             Layout.fillWidth: true
@@ -647,11 +694,45 @@ Item {
             spacing: scaledSpacing
             ScrollBar.vertical: ScrollBar {}
 
+            // ── Smooth scroll settings ────────────────────────────────────
+            // Pre-render one viewport-height of delegates above and below the
+            // visible area so fast scrolling never stalls on delegate creation.
+            cacheBuffer: height
+
+            // Lower deceleration → longer, floatier flick glide (touch/drag).
+            // Higher max velocity → fast swipes feel uncapped.
+            flickDeceleration: 600       // default 1500
+            maximumFlickVelocity: 4000   // default 2500
+
+            // Snap content to integer pixel boundaries — eliminates sub-pixel
+            // shimmer during scroll.
+            pixelAligned: true
+
             onCurrentItemChanged: {
                 if (currentItem && currentItem.focusTextField)
                     currentItem.focusTextField()
+                // Scroll only enough to make the newly-selected line visible.
+                // ListView.Contain = no-op if already in view; minimal scroll otherwise.
+                if (currentIndex >= 0)
+                    positionViewAtIndex(currentIndex, ListView.Contain)
+            }
+
+            // When zoom changes, delegate heights and spacings change via bindings,
+            // but the ListView's internal position cache goes stale.  A deferred
+            // forceLayout() recomputes every item's pixel offset so contentHeight
+            // and the ScrollBar stay correct.
+            Connections {
+                target: rootID
+                function onZoomFactorChanged() {
+                    Qt.callLater(function() { listView.forceLayout() })
+                }
             }
         }
+
+
+
+
+
     }
 
     Component {
@@ -675,7 +756,7 @@ Item {
             property string type: model.type
             property int indexx: model.index
             property bool vis: type === "premise" || type === "subproof"
-                               || type === "sf"
+                               || type === "sf" || type === "comment"
             // These delegate-level ints mirror the ProofModel roles.
             // They must live here (not inside a ComboBox) because inside a ComboBox,
             // `model` refers to the combo's own string-array model, NOT the row data.
@@ -779,6 +860,7 @@ Item {
             // Line Number Button
             Button {
                 id: lineNumberID
+                visible: type !== "comment"
 
                 Layout.preferredHeight: theTextID.height
                 // Content-aware width: at least as tall as it is wide (square),
@@ -852,9 +934,10 @@ Item {
             TextField {
                 id: theTextID
 
-                color: darkMode ? "white" : "black"
+                color: type === "comment" ? (darkMode ? "#808080" : "#888888") : (darkMode ? "white" : "black")
                 height: scaledFontSize + scaledSpacing
                 font.pointSize: scaledFontSize
+                font.italic: type === "comment"
                 Layout.fillWidth: true
 
                 Keys.onPressed: (event) => {
@@ -895,13 +978,15 @@ Item {
                     id: backRectID
                     border.width: 1
                     border.color: {
+                        if (type === "comment")
+                            return darkMode ? "#2A2A1E" : "#FFFDE7"
                         if (cConnector.evalText === "Evaluate Proof")
                             return darkMode ? "white" : "black"
                         if (model.errMsg !== "")
                             return "red"
                         return "springgreen"
                     }
-                    color: textFieldColor
+                    color: type === "comment" ? (darkMode ? "#2A2A1E" : "#FFFDE7") : textFieldColor
                 }
 
                 //placeholderText: indexx === 0 ? qsTr("Start Typing here..."): ""
@@ -1063,6 +1148,7 @@ Item {
                 font.pointSize: scaledFontSize
                 // Short form when zoomed in (>150%) so label stays compact
                 text: {
+                    if (model.type === "comment") return "//"
                     if (zoomFactor > 1.5) {
                         if (model.type === "premise")  return "P"
                         if (model.type === "subproof") return "SP"
@@ -1320,6 +1406,20 @@ Item {
                         onTriggered: {
                             theData.insertLine(index + 1, index + 2, "",
                                                "choose", model.sub, false,
+                                               false, model.ind, [-1])
+                            proofModel.updateLines()
+                            proofModel.updateRefs(index + 1, true)
+                            listView.currentIndex = index + 1
+                            cConnector.evalText = "Evaluate Proof"
+                            proofModel.clearErrors()
+                        }
+                    }
+
+                    Action {
+                        text: qsTr("Add Comment")
+                        onTriggered: {
+                            theData.insertLine(index + 1, index + 2, "",
+                                               "comment", false, false,
                                                false, model.ind, [-1])
                             proofModel.updateLines()
                             proofModel.updateRefs(index + 1, true)

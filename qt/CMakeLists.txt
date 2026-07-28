@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_definitions(WITH_CMAKE)
 
-find_package(Qt6 REQUIRED COMPONENTS Quick Widgets QuickControls2 LinguistTools)
+find_package(Qt6 REQUIRED COMPONENTS Quick Widgets QuickControls2 LinguistTools PrintSupport)
 find_package(LibXml2 REQUIRED)
 find_package(Intl REQUIRED)
 set(Qt6_FIND_VERSION_MIN 6.0)
@@ -110,6 +110,7 @@ target_link_libraries(aris-qt
     PRIVATE Qt6::Quick
     PRIVATE Qt6::Widgets
     PRIVATE Qt6::QuickControls2
+    PRIVATE Qt6::PrintSupport
     PUBLIC LibXml2::LibXml2
     PRIVATE Intl::Intl
 )
