@@ -60,5 +60,5 @@ process (unsigned char * conc, vec_t * prems, const char * rule, vec_t * vars,
     if (strncmp (misc, NOT_MINE, 28))
         return misc;
 
-    return "Rule not recognized.";
+    return _("Rule not recognized.");
 }

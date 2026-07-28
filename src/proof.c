@@ -150,7 +150,14 @@ eval_proof (list_t * everything, vec_t * rets, int verbose)
                                     everything);
 
         if (!ret_chk)
+        {
+            /* Record the failure on this line before bailing out: callers size
+               their per-line display off of rets, so a line with no entry at
+               all reads as "not flagged" instead of "could not be checked". */
+            if (rets)
+                vec_str_add_obj (rets, (unsigned char *) _("Internal error: this line could not be evaluated (out of memory)."));
             return AEC_MEM;
+        }
 
         if (verbose)
         {

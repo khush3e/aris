@@ -36,6 +36,7 @@
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QRegularExpression>
+#include <QCoreApplication>
 
 #ifdef Q_OS_WASM
 #include <emscripten.h>
@@ -403,9 +404,12 @@ int Connector::evalProof(const ProofData *toBeEval, const GoalData *gls, ProofMo
             // Build "Line N · RuleName: <message>" for inline display.
             int lineNum     = sd->line_num;
             int uiRow       = lineNum - 1;
-            QString ruleName = reverseRulesMap.value(sd->rule, QStringLiteral("?"));
+            // Rule names are translated under the "ProofArea" context, matching the
+            // qsTr() calls used for the same rule names in the rule dropdown (ProofArea.qml).
+            QString ruleEnglish = reverseRulesMap.value(sd->rule, QStringLiteral("?"));
+            QString ruleName = QCoreApplication::translate("ProofArea", ruleEnglish.toUtf8().constData());
             QString message  = QString::fromUtf8(cur_ret);
-            QString fullMsg  = QStringLiteral("Line %1 · %2: %3")
+            QString fullMsg  = tr("Line %1 · %2: %3")
                                    .arg(lineNum)
                                    .arg(ruleName)
                                    .arg(message);
