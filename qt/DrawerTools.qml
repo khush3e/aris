@@ -86,7 +86,7 @@ ToolBar {
                     fileModified = false
                 }
                 else
-                    saveAsID.open()
+                    saveFormatPickerID.open()
 
                 menuOptions.close()
             }
@@ -98,14 +98,8 @@ ToolBar {
             icon.color: darkMode ? "white" : "black"
 
             onClicked: {
-
-                if (Qt.platform.os === "wasm")
-                    cConnector.wasmSaveProof(theData, theGoals)
-                else
-                    saveAsID.open()
-                fileModified = false
-
                 menuOptions.close()
+                saveFormatPickerID.open()
             }
         }
 

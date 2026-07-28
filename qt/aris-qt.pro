@@ -1,4 +1,5 @@
 QT += quick widgets quickcontrols2
+!wasm: QT += printsupport
 
 CONFIG += lrelease embed_translations
 

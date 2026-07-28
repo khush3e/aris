@@ -39,6 +39,14 @@ public:
     Q_INVOKABLE void exportMarkdown(const QString &name, const ProofData *pd);
     Q_INVOKABLE void wasmExportMarkdown(const ProofData *pd);
 
+    // ODT export (desktop + WASM)
+    Q_INVOKABLE void exportOdt(const QString &name, const ProofData *pd);
+    Q_INVOKABLE void wasmExportOdt(const ProofData *pd);
+
+    // PDF export (desktop + WASM)
+    Q_INVOKABLE void exportPdf(const QString &name, const ProofData *pd);
+    Q_INVOKABLE void wasmExportPdf(const ProofData *pd);
+
     Q_INVOKABLE void importProof(const QString &name, ProofData *pd, const Connector *c, ProofModel *pm);
     Q_INVOKABLE void wasmImportProof(ProofData *pd, const Connector *c, ProofModel *pm);
     Q_INVOKABLE void importProofWithMode(const QString &name, ProofData *pd, const Connector *c, ProofModel *pm, int mode);

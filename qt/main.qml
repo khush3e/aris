@@ -463,6 +463,44 @@ ApplicationWindow {
         }
     }
 
+    // Save As — OpenDocument Text (.odt)
+    FileDialog {
+        id: saveOdtID
+
+        property bool closeOnSave: false
+
+        nameFilters: ["OpenDocument Text files (*.odt)"]
+        title: "Save As ODT (.odt)"
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "odt"
+        onAccepted: {
+            auxConnector.exportOdt(selectedFile, theData)
+            if (closeOnSave) {
+                closeOnSave = false
+                rootID.close()
+            }
+        }
+    }
+
+    // Save As — PDF (.pdf)
+    FileDialog {
+        id: savePdfID
+
+        property bool closeOnSave: false
+
+        nameFilters: ["PDF files (*.pdf)"]
+        title: "Save As PDF (.pdf)"
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "pdf"
+        onAccepted: {
+            auxConnector.exportPdf(selectedFile, theData)
+            if (closeOnSave) {
+                closeOnSave = false
+                rootID.close()
+            }
+        }
+    }
+
     FontDialog {
         id: fontDialogID
 
@@ -531,17 +569,19 @@ ApplicationWindow {
 
         standardButtons: MessageDialog.Save | MessageDialog.Discard | MessageDialog.Cancel
         onAccepted: {
-            if (Qt.platform.os === "wasm")
-                cConnector.wasmSaveProof(theData, theGoals);
-            else if (fileExists)
-                cConnector.saveProof(filename, theData, theGoals);
-            else {
-                saveAsID.closeOnSave = true
-                saveAsID.open();
-                return
+            if (fileExists) {
+                // Re-save the existing .tle file on every platform
+                if (Qt.platform.os === "wasm")
+                    cConnector.wasmSaveProof(theData, theGoals);
+                else
+                    cConnector.saveProof(filename, theData, theGoals);
+                fileModified = false
+                rootID.close();
+            } else {
+                // New / unsaved proof — let the user choose the format first
+                saveFormatPickerID.closeOnSave = true
+                saveFormatPickerID.open();
             }
-            fileModified = false
-            rootID.close();
         }
         onDiscarded: {
             fileModified = false;
@@ -784,6 +824,122 @@ ApplicationWindow {
                             auxConnector.wasmExportMarkdown(theData)
                         else
                             exportMarkdownID.open()
+                    }
+                }
+            }
+        }
+    }
+
+    // Save As format picker — same style as importBehaviorID / exportFormatID.
+    // Shown whenever the user clicks "Save As" (or saves a new unsaved file).
+    Dialog {
+        id: saveFormatPickerID
+
+        // When true the window should close after the save completes
+        // (forwarded from the unsaved-changes dialog path).
+        property bool closeOnSave: false
+
+        width: Math.min(rootID.width * 0.42, 460)
+        anchors.centerIn: parent
+
+        parent: Overlay.overlay
+        modal: true
+        closePolicy: Popup.CloseOnEscape
+        padding: 20
+
+        Overlay.modal: Rectangle {
+            color: darkMode ? "#66121212" : "#66CFCFCF"
+        }
+
+        background: Rectangle {
+            radius: 12
+            color: darkMode ? "#1F1B24" : "white"
+            border.width: 1
+            border.color: darkMode ? "#50485A" : "#D9D9D9"
+        }
+
+        contentItem: ColumnLayout {
+            width: saveFormatPickerID.availableWidth
+            spacing: 20
+
+            Label {
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                text: qsTr("Choose save format")
+                color: darkMode ? "white" : "black"
+                font.bold: true
+                font.pointSize: thefont.pointSize + 1
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 14
+
+                // ---- Aris (.tle) ----
+                Button {
+                    text: qsTr("Aris (.tle)")
+                    Layout.fillWidth: true
+                    palette {
+                        button: darkMode ? "#2A2631" : "white"
+                        buttonText: darkMode ? "white" : "black"
+                    }
+                    onClicked: {
+                        var close = saveFormatPickerID.closeOnSave
+                        saveFormatPickerID.closeOnSave = false
+                        saveFormatPickerID.close()
+                        if (Qt.platform.os === "wasm") {
+                            cConnector.wasmSaveProof(theData, theGoals)
+                            fileModified = false
+                            if (close) rootID.close()
+                        } else {
+                            saveAsID.closeOnSave = close
+                            Qt.callLater(function() { saveAsID.open() })
+                        }
+                    }
+                }
+
+                // ---- ODT (.odt) ----
+                Button {
+                    text: qsTr("ODT (.odt)")
+                    Layout.fillWidth: true
+                    palette {
+                        button: darkMode ? "#2A2631" : "white"
+                        buttonText: darkMode ? "white" : "black"
+                    }
+                    onClicked: {
+                        var close = saveFormatPickerID.closeOnSave
+                        saveFormatPickerID.closeOnSave = false
+                        saveFormatPickerID.close()
+                        if (Qt.platform.os === "wasm") {
+                            auxConnector.wasmExportOdt(theData)
+                            if (close) rootID.close()
+                        } else {
+                            saveOdtID.closeOnSave = close
+                            Qt.callLater(function() { saveOdtID.open() })
+                        }
+                    }
+                }
+
+                // ---- PDF (.pdf) ----
+                Button {
+                    text: qsTr("PDF (.pdf)")
+                    Layout.fillWidth: true
+                    palette {
+                        button: darkMode ? "#2A2631" : "white"
+                        buttonText: darkMode ? "white" : "black"
+                    }
+                    onClicked: {
+                        var close = saveFormatPickerID.closeOnSave
+                        saveFormatPickerID.closeOnSave = false
+                        saveFormatPickerID.close()
+                        if (Qt.platform.os === "wasm") {
+                            auxConnector.wasmExportPdf(theData)
+                            if (close) rootID.close()
+                        } else {
+                            savePdfID.closeOnSave = close
+                            Qt.callLater(function() { savePdfID.open() })
+                        }
                     }
                 }
             }

@@ -640,6 +640,12 @@ Item {
             delegate: proofLineID
             highlight: highlightID
 
+            // Disable auto-scroll-to-current so the user can freely scroll
+            // the proof after zooming.  Without this, forceLayout() (called on
+            // zoom) causes the ListView to re-pin the view onto the focused line,
+            // making it impossible to scroll away from it.
+            highlightFollowsCurrentItem: false
+
             currentIndex: -1
 
             Layout.fillWidth: true
@@ -647,11 +653,45 @@ Item {
             spacing: scaledSpacing
             ScrollBar.vertical: ScrollBar {}
 
+            // ── Smooth scroll settings ────────────────────────────────────
+            // Pre-render one viewport-height of delegates above and below the
+            // visible area so fast scrolling never stalls on delegate creation.
+            cacheBuffer: height
+
+            // Lower deceleration → longer, floatier flick glide (touch/drag).
+            // Higher max velocity → fast swipes feel uncapped.
+            flickDeceleration: 600       // default 1500
+            maximumFlickVelocity: 4000   // default 2500
+
+            // Snap content to integer pixel boundaries — eliminates sub-pixel
+            // shimmer during scroll.
+            pixelAligned: true
+
             onCurrentItemChanged: {
                 if (currentItem && currentItem.focusTextField)
                     currentItem.focusTextField()
+                // Scroll only enough to make the newly-selected line visible.
+                // ListView.Contain = no-op if already in view; minimal scroll otherwise.
+                if (currentIndex >= 0)
+                    positionViewAtIndex(currentIndex, ListView.Contain)
+            }
+
+            // When zoom changes, delegate heights and spacings change via bindings,
+            // but the ListView's internal position cache goes stale.  A deferred
+            // forceLayout() recomputes every item's pixel offset so contentHeight
+            // and the ScrollBar stay correct.
+            Connections {
+                target: rootID
+                function onZoomFactorChanged() {
+                    Qt.callLater(function() { listView.forceLayout() })
+                }
             }
         }
+
+
+
+
+
     }
 
     Component {
