@@ -24,13 +24,18 @@
 #include "list.h"
 
 #define INIT_CONN_PIXBUF(s,i,c,f) {			\
-  s->conn_pixbufs[i]					\
-  = gdk_pixbuf_scale_simple (the_app->conn_pixbufs[i],	\
+  if (the_app->conn_pixbufs[i]) { \
+    s->conn_pixbufs[i]					\
+    = gdk_pixbuf_scale_simple (the_app->conn_pixbufs[i],	\
 			     f, f,			\
 			     GDK_INTERP_BILINEAR);	\
-  g_object_set_data (G_OBJECT (s->conn_pixbufs[i]),	\
+    if (s->conn_pixbufs[i]) \
+      g_object_set_data (G_OBJECT (s->conn_pixbufs[i]),	\
 		     _("conn"), c);			\
-  }
+  } else { \
+    s->conn_pixbufs[i] = NULL; \
+  } \
+}
 
 /* Initializes a sentence parent.
  *  input:
@@ -190,13 +195,18 @@ sen_parent_set_font (sen_parent * sp, int new_font)
 	  h = 1.5;
 	}
 
-      sp->conn_pixbufs[i] = gdk_pixbuf_scale_simple (the_app->conn_pixbufs[i],
+      if (the_app->conn_pixbufs[i]) {
+        sp->conn_pixbufs[i] = gdk_pixbuf_scale_simple (the_app->conn_pixbufs[i],
 						     ((double) font) * w,
 						     ((double) font) * h,
 						     GDK_INTERP_BILINEAR);
 
-      g_object_set_data (G_OBJECT (sp->conn_pixbufs[i]),
+        if (sp->conn_pixbufs[i])
+          g_object_set_data (G_OBJECT (sp->conn_pixbufs[i]),
 			 _("conn"), (gpointer) conn_list[i]);
+      } else {
+        sp->conn_pixbufs[i] = NULL;
+      }
     }
 
   item_t * ev_itr;

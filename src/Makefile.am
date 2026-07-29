@@ -44,7 +44,8 @@ XPM_SOURCES = \
 	not-conn.xpm	\
 	or-conn.xpm	\
 	tau-conn.xpm	\
-	unv-conn.xpm
+	unv-conn.xpm	\
+	xor-conn.xpm
 
 aris_SOURCES = $(XPM_SOURCES)
 

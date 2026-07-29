@@ -157,11 +157,16 @@ rules_table_init (int boolean)
   if (!rt->boole)
     return NULL;
 
-  rules_table_help_init (rt, 0, rt->infer->table, 8, boolean);
-  rules_table_help_init (rt, 8, rt->equiv->table, 10, 0);
-  rules_table_help_init (rt, 18, rt->pred->table, 9, boolean);
-  rules_table_help_init (rt, 27, rt->misc->table, 4, boolean);
-  rules_table_help_init (rt, 31, rt->boole->table, 4, 0);
+  rules_table_help_init (rt, 0, rt->infer->table,
+			 END_INFER_RULES, boolean);
+  rules_table_help_init (rt, END_INFER_RULES, rt->equiv->table,
+			 END_EQUIV_RULES - END_INFER_RULES, 0);
+  rules_table_help_init (rt, END_EQUIV_RULES, rt->pred->table,
+			 END_PRED_RULES - END_EQUIV_RULES, boolean);
+  rules_table_help_init (rt, END_PRED_RULES, rt->misc->table,
+			 END_MISC_RULES - END_PRED_RULES, boolean);
+  rules_table_help_init (rt, END_MISC_RULES, rt->boole->table,
+			 END_BOOL_RULES - END_MISC_RULES, 0);
 
   if (boolean)
     {

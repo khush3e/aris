@@ -507,7 +507,7 @@ gui_new ()
   aris_proof * new_ap;
   int ret;
 
-  new_ap = aris_proof_init (NULL);
+  new_ap = aris_proof_init ();
   if (!new_ap)
     return -1;
 
@@ -1427,7 +1427,7 @@ menu_activated (aris_proof * ap, int menu_id)
   switch (menu_id)
     {
     case CONF_MENU_NEW:
-      ret = gui_new (ap);
+      ret = gui_new ();
       break;
 
     case CONF_MENU_OPEN:

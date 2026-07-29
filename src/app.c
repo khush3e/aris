@@ -45,6 +45,7 @@
 #include "ctr-conn.xpm"
 #include "elm-conn.xpm"
 #include "nil-conn.xpm"
+#include "xor-conn.xpm"
 
 aris_app * the_app = 0;
 
@@ -129,7 +130,9 @@ init_app (int boolean, int verbose)
 
 #define INIT_CONN_PIXBUF(i,d,c) {		\
     app->conn_pixbufs[i] = gdk_pixbuf_new_from_xpm_data ((const char **) d); \
-    g_object_set_data (G_OBJECT (app->conn_pixbufs[i]), _("conn"), c);	\
+    if (app->conn_pixbufs[i]) { \
+      g_object_set_data (G_OBJECT (app->conn_pixbufs[i]), _("conn"), c);	\
+    } \
   }
 
 /* Initializes the connective pixbufs for the app.
@@ -152,6 +155,7 @@ the_app_init_conn_pixbufs (aris_app * app)
   INIT_CONN_PIXBUF (8, ctr_conn_xpm, CTR);
   INIT_CONN_PIXBUF (9, elm_conn_xpm, ELM);
   INIT_CONN_PIXBUF (10, nil_conn_xpm, NIL);
+  INIT_CONN_PIXBUF (11, xor_conn_xpm, XOR);
 
   return 0;
 }
@@ -354,7 +358,11 @@ the_app_read_config_file (aris_app * app)
   // Because Losedows hates it when we try to read the entire file at once.
   int f_pos;
   for (f_pos = 0; f_pos < size; f_pos+=512)
-    fread (buffer + f_pos, 1, 512, conf_file);
+    {
+      size_t chunk = (size - f_pos < 512) ? (size - f_pos) : 512;
+      if (fread (buffer + f_pos, 1, chunk, conf_file) != chunk)
+        break;
+    }
   buffer[size] = '\0';
 
   fclose (conf_file);
