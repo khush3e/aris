@@ -2086,7 +2086,12 @@ parse_thy (char * filename, proof_t * proof)
     buffer = (char *) calloc (file_size, sizeof (char));
     CHECK_ALLOC (buffer, -1);
 
-    fread (buffer, 1, file_size, file);
+    if (fread (buffer, 1, file_size, file) != file_size)
+    {
+        free (buffer);
+        fclose (file);
+        return -2;
+    }
     fclose (file);
     // Read in the file buffer to buffer.
 

@@ -358,7 +358,11 @@ the_app_read_config_file (aris_app * app)
   // Because Losedows hates it when we try to read the entire file at once.
   int f_pos;
   for (f_pos = 0; f_pos < size; f_pos+=512)
-    fread (buffer + f_pos, 1, 512, conf_file);
+    {
+      size_t chunk = (size - f_pos < 512) ? (size - f_pos) : 512;
+      if (fread (buffer + f_pos, 1, chunk, conf_file) != chunk)
+        break;
+    }
   buffer[size] = '\0';
 
   fclose (conf_file);
