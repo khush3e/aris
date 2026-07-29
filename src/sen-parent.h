@@ -21,6 +21,7 @@
 
 #include <gtk/gtk.h>
 #include "typedef.h"
+#include "process.h"
 
 #define SEN_PARENT(o) ((sen_parent *) o)
 
@@ -44,7 +45,7 @@ struct sen_parent {
   GtkWidget * separator;       // The separator that separates prems from concs.
   GtkAccelGroup * accel;       // The accelerator for the keybindings.
 
-  GdkPixbuf * conn_pixbufs[11];
+  GdkPixbuf * conn_pixbufs[NUM_CONNS];
   struct list * everything;  // The list of sentences.
   struct item * focused;     // The currently focused sentence.
   int font;                  // The index of the font in the_app->fonts.

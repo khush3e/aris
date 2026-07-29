@@ -153,7 +153,8 @@ void callback_sentence_screen_keyboard(GtkWidget *widget, GdkEvent *def_event, g
 
 GtkWidget *init_button(sen_parent *sp, GtkWidget *grid, char *type, int r, int c)
 {
-  GdkPixbuf *symbol_pixbuf = gdk_pixbuf_scale_simple(sen_parent_get_conn_by_type(sp, type), 12, 12, GDK_INTERP_BILINEAR);
+  GdkPixbuf *conn_pb = sen_parent_get_conn_by_type(sp, type);
+  GdkPixbuf *symbol_pixbuf = conn_pb ? gdk_pixbuf_scale_simple(conn_pb, 12, 12, GDK_INTERP_BILINEAR) : NULL;
   GtkWidget *image = gtk_image_new_from_pixbuf(symbol_pixbuf);
 
   GtkWidget *button = gtk_button_new();
