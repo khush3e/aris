@@ -276,7 +276,7 @@
     </message>
     <message>
         <source>sf</source>
-        <translation>TBA</translation>
+        <translation>ab</translation>
     </message>
     <message>
         <source>Inference</source>

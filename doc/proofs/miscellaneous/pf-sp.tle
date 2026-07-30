@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<proof mode="standard" version="1.0">
+<proof mode="standard" version="1,0">
  <goals>
   <goal t="R $ B"/>
  </goals>
