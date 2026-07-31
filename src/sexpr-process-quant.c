@@ -459,6 +459,7 @@ proc_nq (unsigned char * prem, unsigned char * conc)
     if (!scope)
         return NULL;
 
+    int var_len = strlen ((char *) var);
     free (var);
 
     int gqv;
@@ -483,7 +484,7 @@ proc_nq (unsigned char * prem, unsigned char * conc)
     unsigned char * oth_sen;
     int oth_pos, alloc_size;
 
-    alloc_size = l_len - strlen (var) - S_CL - 5;
+    alloc_size = l_len - var_len - S_CL - 5;
     oth_sen = (unsigned char *) calloc (alloc_size + 1, sizeof (char));
     CHECK_ALLOC (oth_sen, NULL);
 
