@@ -812,23 +812,37 @@ Item {
                 // Indent unit U = scaledSpacing*2 per nesting level (zoom-aware).
                 // depth = model.ind / 20.
                 //
-                // sf rows:      spacer = (depth-1)*U + chevron(U) → depth*U total
-                // content rows: spacer =  depth*U                 → depth*U total
+                // The chevron slot below is a fixed-width Item that is always
+                // present (visible: true) for every row nested inside a
+                // subproof, whether or not THIS particular row owns the
+                // toggle — only the Button *inside* it toggles visibility.
+                // That keeps the RowLayout's shape (item count + spacing
+                // gaps) identical across sf and non-sf rows at the same
+                // depth, instead of relying on compensating for RowLayout's
+                // spacing/exclusion behavior around a conditionally-visible
+                // direct child.
                 //
-                // All line numbers at the same depth land at the same x position.
+                // spacer = (depth-1)*U, chevron slot = U → depth*U total,
+                // for every row at that depth.
                 Item {
-                    width:  Math.round((outerColumn.depthLevel - (model.subSt ? 1 : 0))
-                                       * outerColumn.indentUnit)
+                    width:  outerColumn.depthLevel > 0
+                            ? Math.round((outerColumn.depthLevel - 1) * outerColumn.indentUnit)
+                            : 0
                     height: 1
                 }
 
-                // Collapse chevron — only on sf rows; always exactly one indentUnit wide.
-                // ▶ = collapsed, ▼ = expanded.
-                Button {
-                    id: collapseToggleID
-                    visible: model.subSt === true
+                // Chevron slot — always present at depth > 0; the toggle
+                // button inside only draws on sf rows.
+                Item {
+                    id: chevronSlot
+                    visible: outerColumn.depthLevel > 0
                     width:   visible ? Math.round(outerColumn.indentUnit) : 0
                     height:  theTextID.height
+
+                Button {
+                    id: collapseToggleID
+                    anchors.fill: parent
+                    visible: model.subSt === true
 
                     // Always-visible background — subtle rounded rect, not flat.
                     background: Rectangle {
@@ -854,6 +868,7 @@ Item {
                     ToolTip.delay: 600
                     ToolTip.text: model.collapsed ? qsTr("Expand subproof") : qsTr("Collapse subproof")
                     onClicked: proofModel.toggleCollapsed(indexx)
+                }
                 }
 
 
