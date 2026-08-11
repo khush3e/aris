@@ -133,7 +133,7 @@ ToolBar {
             ToolTip.text: cConnector.evalText
             background: Rectangle {
                 id: runButtonID
-                color: (cConnector.evalText === "Evaluate Proof") ? (darkMode ? "#BB86FC" : "white") : (cConnector.evalText === "Correct!") ? (darkMode ? "springgreen" : "green") : "red"
+                color: (cConnector.evalText === qsTr("Evaluate Proof")) ? (darkMode ? "#BB86FC" : "white") : (cConnector.evalText === qsTr("Correct!")) ? (darkMode ? "springgreen" : "green") : "red"
                 radius: 5
             }
 

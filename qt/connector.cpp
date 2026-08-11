@@ -80,7 +80,7 @@ void releaseCProof(proof_t *&proof)
 } 
 
 Connector::Connector(QObject *parent)
-    : QObject{parent}, m_evalText{"Evaluate Proof"}, cProof(nullptr), returns(nullptr)
+    : QObject{parent}, m_evalText{tr("Evaluate Proof")}, cProof(nullptr), returns(nullptr)
 {   
     // Initialize rulesMap
 
@@ -408,7 +408,10 @@ int Connector::evalProof(const ProofData *toBeEval, const GoalData *gls, ProofMo
             // qsTr() calls used for the same rule names in the rule dropdown (ProofArea.qml).
             QString ruleEnglish = reverseRulesMap.value(sd->rule, QStringLiteral("?"));
             QString ruleName = QCoreApplication::translate("ProofArea", ruleEnglish.toUtf8().constData());
-            QString message  = QString::fromUtf8(cur_ret);
+            // Backend validation strings come from the gettext-wrapped aris/src C
+            // engine, which lupdate cannot scan. Route the literal through Qt's own
+            // translation table (context "ProofErrors") using it as the msgid instead.
+            QString message  = QCoreApplication::translate("ProofErrors", cur_ret);
             QString fullMsg  = tr("Line %1 · %2: %3")
                                    .arg(lineNum)
                                    .arg(ruleName)
@@ -426,7 +429,7 @@ int Connector::evalProof(const ProofData *toBeEval, const GoalData *gls, ProofMo
     }
 
     // evalText stays as the global status,  detail is now in the model.
-    setEvalText(anyError ? QStringLiteral("Errors found") : QStringLiteral("Correct!"));
+    setEvalText(anyError ? tr("Errors found") : tr("Correct!"));
 
     return 1;
 }
