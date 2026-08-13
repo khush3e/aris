@@ -36,3 +36,5 @@ for TLE in `find . -name '*.tle' -type f`; do
  N=$((N+1))
  done
 echo "$GOOD good (out of $N cases)"
+
+[ "$GOOD" -eq "$N" ] || exit 1

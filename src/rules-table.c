@@ -585,6 +585,7 @@ rules_table_destroy_menu_item (sentence * sen)
 
   if (sen->proof)
     proof_destroy (sen->proof);
+  sen->proof = NULL;   // proof_destroy() now frees the struct itself; avoid a dangling field
   free (SD(sen)->file);
   SD(sen)->file = NULL;
 

@@ -29,7 +29,7 @@ struct ProofLine{
     bool pSubEnd;
     int pInd;
     QList<int> pRefs;
-    unsigned char *fname;
+    QString fname;       // value type: safe to copy through QVector<ProofLine>
     QString pErrorMsg;   // inline error text, empty = no error
 
     // Locale-invariant combo-box position.  -1 means structural / not a rule.

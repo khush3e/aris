@@ -257,6 +257,8 @@ void Connector::genProof(const ProofData *toBeEval)
     //  ProofData::lines() returns by value (full copy).
     const QVector<ProofLine> snap = toBeEval->lines();
 
+    bool usesBooleanRule = false;
+
     for (int i = 0; i < snap.size(); i++) {
         const ProofLine &pl = snap.at(i);   // const-ref into the snapshot — zero copies
 
@@ -286,6 +288,8 @@ void Connector::genProof(const ProofData *toBeEval)
         if (rule == RULE_UNKNOWN)
             rule = -1;
 
+        if (rule >= 34 && rule <= 37)
+            usesBooleanRule = true;
 
         // Assign Indices
         for (int ii = 0; ii < m_indices[i].size(); ii++)
@@ -320,8 +324,14 @@ void Connector::genProof(const ProofData *toBeEval)
             temp_refs[pl.pRefs.size() - 1] = REF_END;
         }
 
+        // sen_data_init() strdup's `file` internally, so the QByteArray only
+        // needs to outlive this call.
+        QByteArray fnameUtf8 = pl.fname.toUtf8();
         sen_data *sd = sen_data_init(i + 1, rule, (unsigned char *) str.c_str(), temp_refs,
-                                     premise, pl.fname, subproof, depth, NULL);
+                                     premise,
+                                     pl.fname.isEmpty() ? nullptr : (unsigned char *) fnameUtf8.constData(),
+                                     subproof, depth, NULL);
+        free(temp_refs);
         if (!sd) {
             free(ind);
             qDebug() << "proof: could not initialize sen_data";
@@ -337,8 +347,7 @@ void Connector::genProof(const ProofData *toBeEval)
             qDebug() << "proof: could not insert sen_data";
     }
 
-    // TODO : Fix boolean
-    cProof->boolean = 0;
+    cProof->boolean = usesBooleanRule ? 1 : 0;
 }
 
 
@@ -549,7 +558,7 @@ void Connector::openProof(const QString &name, ProofData *openTo, GoalData *gls)
         openTo->insertLine(sd->line_num-1, sd->line_num, (const char *) sd->text,
                            reverseRulesMap[effectiveRule], (sd->depth > 0),
                            (effectiveRule == -2),
-                           (sd->line_num != 1 && ((sen_data *) pf_itr->prev->value)->depth > sd->depth),
+                           (pf_itr->prev && ((sen_data *) pf_itr->prev->value)->depth > sd->depth),
                            sd->depth * 20, temp_refs,
                            ci.first, ci.second);
         d = sd->depth;
@@ -596,7 +605,7 @@ void Connector::openProof(const QString &name, ProofData *openTo, GoalData *gls)
  */
 void Connector::wasmOpenProof(ProofData *open, GoalData *gls)
 {
-    auto fileContentReady = [&open, this, &gls](const QString &fileName, const QByteArray &fileContent) {
+    auto fileContentReady = [open, this, gls](const QString &fileName, const QByteArray &fileContent) {
         if (fileName.isEmpty()) {
             qDebug() << "No file was selected" ;
         } else {
@@ -743,8 +752,22 @@ void Connector::smartPaste(ProofData *pd, ProofModel *pm)
         pd->removeLineAt(0);
 
     int insertIdx = 0;
+    // Tracks the subproof nesting depth of the previously-inserted line so
+    // indentation on pasted text can be mapped to Aris's sf/subproof-end
+    // structure instead of flattening everything to depth 0.
+    int prevDepth = 0;
 
     for (const QString &rawLine : lines) {
+        // Measure leading indentation on the RAW line, before trimming
+        // discards it — 4 spaces (or 1 tab, expanded to 4) per depth level.
+        int leadingWs = 0;
+        for (const QChar &ch : rawLine) {
+            if (ch == QLatin1Char('\t')) leadingWs += 4;
+            else if (ch == QLatin1Char(' ')) leadingWs += 1;
+            else break;
+        }
+        const int depth = leadingWs / 4;
+
         QString line = rawLine.trimmed();
         if (line.isEmpty()) continue;
 
@@ -811,7 +834,8 @@ void Connector::smartPaste(ProofData *pd, ProofModel *pm)
         }
 
         const bool isKnownRule = ruleAliases.values().contains(foundRule);
-        if (refs.size() == 1 && !foundRule.isEmpty() && isKnownRule
+        const bool ambiguousShortAlias = isKnownRule && bestRuleIndex != -1 && bestAlias.length() <= 3;
+        if (refs.size() == 1 && !foundRule.isEmpty() && ambiguousShortAlias
             && foundRule != QLatin1String("sf")
             && foundRule != QLatin1String("subproof"))
             foundRule = QStringLiteral("premise");
@@ -840,11 +864,17 @@ void Connector::smartPaste(ProofData *pd, ProofModel *pm)
         line.replace(reEx,       QStringLiteral("∃\\1"));
         // Aris requires parentheses wrapping the predicate after a quantifier.
         line.replace(reQuantParen, QStringLiteral("\\1\\2(\\3)"));
+        const bool isSubStart = depth > prevDepth;
+        const bool isSubEnd   = depth < prevDepth;
+        if (isSubStart)
+            foundRule = QStringLiteral("sf");
+        prevDepth = depth;
 
         //  Per-line debug logging only in debug builds.
 #ifndef QT_NO_DEBUG
         qDebug() << "[SmartPaste] Inserting at" << insertIdx
-                 << "text:" << line << "rule:" << foundRule << "refs:" << refs;
+                 << "text:" << line << "rule:" << foundRule << "refs:" << refs
+                 << "depth:" << depth;
 #endif
 
         //  Pass line (QString) directly — insertLine already takes QString.
@@ -854,7 +884,8 @@ void Connector::smartPaste(ProofData *pd, ProofModel *pm)
             // populated immediately on paste, not lazily by the combo binding.
             int ruleId = rulesMap.value(foundRule, -1);
             auto ci = getCategoryAndIndex(ruleId);
-            pd->insertLine(insertIdx, insertIdx + 1, line, foundRule, false, false, false, 0, refs,
+            pd->insertLine(insertIdx, insertIdx + 1, line, foundRule,
+                           depth > 0, isSubStart, isSubEnd, depth * 20, refs,
                            ci.first, ci.second);
         }
         insertIdx++;

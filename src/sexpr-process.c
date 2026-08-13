@@ -202,11 +202,27 @@ construct_other (unsigned char * main_str,
 {
     unsigned char * oth_sen;
     int oth_pos = init_pos;
-    va_list args;
+    va_list args, args_copy;
 
     va_start (args, template);
 
-    oth_sen = (unsigned char *) calloc (alloc_size + 1, sizeof (char));
+    // alloc_size is a hand-derived estimate computed by each caller (e.g.
+    // l_len - 2 * strlen (lsen) - S_NL - 7 in proc_bn) that has to exactly
+    // match init_pos + formatted-length + tail-length. At least one caller
+    // gets this wrong and undersizes the buffer -- caught as a heap buffer
+    // overflow under glibc's _FORTIFY_SOURCE, silent memory corruption
+    // elsewhere. Measure the real formatted length instead of trusting it;
+    // every call site passes a single "%s" arg, so va_copy + vsnprintf(NULL,
+    // 0, ...) gives the exact size needed regardless of what alloc_size says.
+    va_copy (args_copy, args);
+    int fmt_len = vsnprintf (NULL, 0, template, args_copy);
+    va_end (args_copy);
+
+    int tail_len = strlen (main_str + fin_pos);
+    int needed = init_pos + fmt_len + tail_len + 1;
+    (void) alloc_size;   // superseded by the exact size computed above
+
+    oth_sen = (unsigned char *) calloc (needed, sizeof (char));
     CHECK_ALLOC (oth_sen, NULL);
     strncpy (oth_sen, main_str, oth_pos);
 
@@ -250,7 +266,13 @@ sexpr_add_not (unsigned char * in_str)
 {
     unsigned char * not_in_str;
 
-    not_in_str = (unsigned char *) calloc (strlen (in_str) + S_NL + 3, sizeof (char));
+    // "(%s %s)" with args S_NOT and in_str needs strlen(in_str) + S_NL
+    // (the two %s substitutions) + 3 literal characters ('(', ' ', ')')
+    // + 1 for the null terminator = + 4, not + 3. The previous off-by-one
+    // undersized the buffer by exactly the null terminator's byte -- a
+    // heap buffer overflow on every call, caught by glibc's
+    // _FORTIFY_SOURCE (see PRODUCTION_READINESS_AUDIT.md).
+    not_in_str = (unsigned char *) calloc (strlen (in_str) + S_NL + 4, sizeof (char));
     CHECK_ALLOC (not_in_str, NULL);
     sprintf (not_in_str, "(%s %s)", S_NOT, in_str);
 

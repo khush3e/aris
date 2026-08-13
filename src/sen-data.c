@@ -629,7 +629,8 @@ convert_sd_latex (sen_data * sd)
 
     text = sd->text;
 
-    out_str = (char *) calloc (sd->depth * 6 + 1, sizeof (char));
+    // "\pquad " is 7 characters; must match the per-depth allocation below.
+    out_str = (char *) calloc (sd->depth * 7 + 1, sizeof (char));
     CHECK_ALLOC (out_str, NULL);
 
     out_pos = 0;

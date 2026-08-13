@@ -774,6 +774,19 @@ aio_validate_proof (proof_t * proof)
  *  output:
  *    the opened proof, or NULL on error.
  */
+// Every early-out below used the file-wide XML_ERR(), which just reports
+// and returns -- leaking the partially-built `proof` (and any sen_data /
+// goal buffers already inserted into it) and the open `xml` reader on every
+// parse failure. Shadow it for the body of this function only so each of
+// those early-outs also releases what's been allocated so far; restored to
+// the original definition right after the function.
+#undef XML_ERR
+#define XML_ERR(r) { \
+    fprintf (stderr, "XML Error\n"); \
+    if (xml) xmlFreeTextReader (xml); \
+    if (proof) proof_destroy (proof); \
+    return r; \
+}
 proof_t *
 aio_open (const char * file_name)
 {
@@ -873,7 +886,7 @@ aio_open (const char * file_name)
                 item_t * ret_itm;
                 ret_itm = ls_push_obj (proof->goals, buffer);
                 if (!ret_itm)
-                    return NULL;
+                    XML_ERR (NULL);
             }
             else if (!strcmp ((const char *) buffer, GOAL_TAG))
             {
@@ -923,13 +936,13 @@ aio_open (const char * file_name)
 
             sd = aio_open_prem (xml);
             if (!sd)
-                return NULL;
+                XML_ERR (NULL);
             sd->line_num = line++;
 
             item_t * itm;
             itm = ls_push_obj (proof->everything, sd);
             if (!itm)
-                return NULL;
+                XML_ERR (NULL);
         }
         else if (!strcmp ((const char *) buffer, PREMISE_TAG))
         {
@@ -992,7 +1005,12 @@ aio_open (const char * file_name)
                 XML_ERR (NULL);
 
             int sub = 0, old_depth;
-            old_depth = ((sen_data *) proof->everything->tail->value)->depth;
+            // proof->everything->tail is NULL when there were no premise
+            // lines before this conclusion (a proof with zero premises is
+            // legal) -- fall back to depth 0 instead of dereferencing NULL.
+            old_depth = proof->everything->tail
+                ? ((sen_data *) proof->everything->tail->value)->depth
+                : 0;
             if (sd->depth > old_depth)
                 sub = 1;
 
@@ -1002,17 +1020,21 @@ aio_open (const char * file_name)
             item_t * itm;
             itm = ls_push_obj (proof->everything, sd);
             if (!itm)
-                return NULL;
+                XML_ERR (NULL);
         }
     }
 
     xmlFreeTextReader (xml);
+    xml = NULL;   // so the XML_ERR shadow below doesn't double-free it
 
     if (aio_compute_indices (proof) < 0)
         XML_ERR (NULL);
-        
+
     if (aio_validate_proof (proof) < 0)
         XML_ERR (NULL);
 
     return proof;
 }
+// Restore the file-wide definition for every other function below.
+#undef XML_ERR
+#define XML_ERR(r) {fprintf (stderr, "XML Error\n"); return r;}

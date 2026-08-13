@@ -769,8 +769,10 @@ a conclusion must be specified in evaluation mode.\n");
           if (c_ret == -1)
             exit (EXIT_FAILURE);
 
+          // proof_destroy() now frees the proof_t struct itself as part of
+          // fully owning cleanup (see PRODUCTION_READINESS_AUDIT.md #10) --
+          // this used to be a required second free(), now it would double-free.
           proof_destroy (proof[c]);
-          free (proof[c]);
         }
 
       exit (EXIT_SUCCESS);
