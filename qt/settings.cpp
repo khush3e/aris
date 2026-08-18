@@ -5,10 +5,8 @@
 Settings::Settings(QGuiApplication *app)
     : m_app(app)
 {
-    // Add localization
-    QTranslator translator;
-    if (translator.load(QLocale::system(), u"aris-qt"_qs,u"_"_qs, u":/i18n"_qs)) {
-        app->installTranslator(&translator);
+    if (m_translator.load(QLocale::system(), u"aris-qt"_qs,u"_"_qs, u":/i18n"_qs)) {
+        app->installTranslator(&m_translator);
     }
 }
 

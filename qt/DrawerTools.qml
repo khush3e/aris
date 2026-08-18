@@ -61,7 +61,7 @@ ToolBar {
             icon.color: darkMode ? "white" : "black"
 
             onClicked: {
-                cConnector.evalText = "Evaluate Proof"
+                cConnector.evalText = qsTr("Evaluate Proof")
 
                 if (Qt.platform.os === "wasm") {
                     isExtFile = true

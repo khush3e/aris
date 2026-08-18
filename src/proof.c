@@ -59,6 +59,8 @@ proof_destroy (proof_t * proof)
     {
         item_t * n_itm;
         n_itm = itm->next;
+        if (itm->value)
+            sen_data_destroy ((sen_data *) itm->value);
         free (itm);
         itm = n_itm;
     }
@@ -68,8 +70,20 @@ proof_destroy (proof_t * proof)
         item_t * n_itm;
         n_itm = itm->next;
         free (itm->value);
+        free (itm);
         itm = n_itm;
     }
+
+    // destroy_list() only frees the item_t wrappers (already done above) and
+    // the list_t header itself -- it does not touch item->value, which is
+    // exactly what we want here since the payloads were just freed above.
+    proof->everything->head = proof->everything->tail = NULL;
+    destroy_list (proof->everything);
+
+    proof->goals->head = proof->goals->tail = NULL;
+    destroy_list (proof->goals);
+
+    free (proof);
 }
 
 /* Evaluates a proof object.
@@ -229,7 +243,7 @@ convert_proof_latex (proof_t * proof, const char * filename)
     if (!file)
     {
         PERROR (NULL);
-        exit (EXIT_FAILURE);
+        return AEC_MEM;
     }
 
     fprintf (file, "\\documentclass{article}\n");

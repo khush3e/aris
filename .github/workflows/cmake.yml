@@ -41,6 +41,14 @@ jobs:
       # Execute the build.  You can specify a specific target with "--target <NAME>"
       run: cmake --build . --config $BUILD_TYPE
 
+    - name: Run proof regression tests
+      # Exercises the shared C evaluation engine against every fixture in
+      # doc/proofs/ (propositional, predicate, boolean, ...). test-all.sh
+      # now exits non-zero on any regression so this step actually gates CI.
+      working-directory: ${{github.workspace}}/doc/proofs
+      shell: bash
+      run: bash test-all.sh ${{github.workspace}}/build/aris
+
 
   win64:
     runs-on: windows-latest

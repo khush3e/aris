@@ -78,7 +78,7 @@ Item {
         listView.currentIndex = insertAt
 
         fileModified = true
-        cConnector.evalText = "Evaluate Proof"
+        cConnector.evalText = qsTr("Evaluate Proof")
         proofModel.clearErrors()
     }
 
@@ -103,7 +103,7 @@ Item {
         listView.currentIndex = insertAt2
 
         fileModified = true
-        cConnector.evalText = "Evaluate Proof"
+        cConnector.evalText = qsTr("Evaluate Proof")
         proofModel.clearErrors()
     }
 
@@ -242,7 +242,7 @@ Item {
             proofModel.updateRefs(insertAt, true)
             listView.currentIndex = insertAt
             fileModified = true
-            cConnector.evalText = "Evaluate Proof"
+            cConnector.evalText = qsTr("Evaluate Proof")
             proofModel.clearErrors()
         }
     }
@@ -270,7 +270,7 @@ Item {
             listView.currentIndex = insertIndex
             // premiseCount is recomputed automatically via postLineInsert signal.
             fileModified = true
-            cConnector.evalText = "Evaluate Proof"
+            cConnector.evalText = qsTr("Evaluate Proof")
             proofModel.clearErrors()
         }
     }
@@ -293,7 +293,7 @@ Item {
             proofModel.updateRefs(insertIndex, true)
             listView.currentIndex = insertIndex
             fileModified = true
-            cConnector.evalText = "Evaluate Proof"
+            cConnector.evalText = qsTr("Evaluate Proof")
             proofModel.clearErrors()
         }
     }
@@ -328,7 +328,7 @@ Item {
             }
             // premiseCount is recomputed automatically via postLineRemove signal.
             fileModified = true
-            cConnector.evalText = "Evaluate Proof"
+            cConnector.evalText = qsTr("Evaluate Proof")
             proofModel.clearErrors()
         }
     }
@@ -383,7 +383,7 @@ Item {
                     } else {
                         proofModel.toggleLineType(cur)
                         fileModified = true
-                        cConnector.evalText = "Evaluate Proof"
+                        cConnector.evalText = qsTr("Evaluate Proof")
                         proofModel.clearErrors()
                     }
                 } else {
@@ -403,7 +403,7 @@ Item {
                     // Boundary — atomic toggle.
                     proofModel.toggleLineType(cur)
                     fileModified = true
-                    cConnector.evalText = "Evaluate Proof"
+                    cConnector.evalText = qsTr("Evaluate Proof")
                     proofModel.clearErrors()
                 } else {
                     // Non-boundary — physical move to block boundary required.
@@ -488,7 +488,7 @@ Item {
                 proofModel.updateRefs(insertIndex, true)
                 listView.currentIndex = insertIndex
                 fileModified = true
-                cConnector.evalText = "Evaluate Proof"
+                cConnector.evalText = qsTr("Evaluate Proof")
                 proofModel.clearErrors()
             }
         }
@@ -507,7 +507,7 @@ Item {
                 proofModel.updateRefs(myIdx + 1, true)
                 listView.currentIndex = myIdx + 1
                 fileModified = true
-                cConnector.evalText = "Evaluate Proof"
+                cConnector.evalText = qsTr("Evaluate Proof")
                 proofModel.clearErrors()
             }
         }
@@ -525,7 +525,7 @@ Item {
                 proofModel.updateRefs(myIdx + 1, true)
                 listView.currentIndex = myIdx + 1
                 fileModified = true
-                cConnector.evalText = "Evaluate Proof"
+                cConnector.evalText = qsTr("Evaluate Proof")
                 proofModel.clearErrors()
             }
         }
@@ -552,7 +552,7 @@ Item {
                     listView.currentIndex = 0
                 }
                 fileModified = true
-                cConnector.evalText = "Evaluate Proof"
+                cConnector.evalText = qsTr("Evaluate Proof")
                 proofModel.clearErrors()
             }
         }
@@ -812,23 +812,37 @@ Item {
                 // Indent unit U = scaledSpacing*2 per nesting level (zoom-aware).
                 // depth = model.ind / 20.
                 //
-                // sf rows:      spacer = (depth-1)*U + chevron(U) → depth*U total
-                // content rows: spacer =  depth*U                 → depth*U total
+                // The chevron slot below is a fixed-width Item that is always
+                // present (visible: true) for every row nested inside a
+                // subproof, whether or not THIS particular row owns the
+                // toggle — only the Button *inside* it toggles visibility.
+                // That keeps the RowLayout's shape (item count + spacing
+                // gaps) identical across sf and non-sf rows at the same
+                // depth, instead of relying on compensating for RowLayout's
+                // spacing/exclusion behavior around a conditionally-visible
+                // direct child.
                 //
-                // All line numbers at the same depth land at the same x position.
+                // spacer = (depth-1)*U, chevron slot = U → depth*U total,
+                // for every row at that depth.
                 Item {
-                    width:  Math.round((outerColumn.depthLevel - (model.subSt ? 1 : 0))
-                                       * outerColumn.indentUnit)
+                    width:  outerColumn.depthLevel > 0
+                            ? Math.round((outerColumn.depthLevel - 1) * outerColumn.indentUnit)
+                            : 0
                     height: 1
                 }
 
-                // Collapse chevron — only on sf rows; always exactly one indentUnit wide.
-                // ▶ = collapsed, ▼ = expanded.
-                Button {
-                    id: collapseToggleID
-                    visible: model.subSt === true
+                // Chevron slot — always present at depth > 0; the toggle
+                // button inside only draws on sf rows.
+                Item {
+                    id: chevronSlot
+                    visible: outerColumn.depthLevel > 0
                     width:   visible ? Math.round(outerColumn.indentUnit) : 0
                     height:  theTextID.height
+
+                Button {
+                    id: collapseToggleID
+                    anchors.fill: parent
+                    visible: model.subSt === true
 
                     // Always-visible background — subtle rounded rect, not flat.
                     background: Rectangle {
@@ -854,6 +868,7 @@ Item {
                     ToolTip.delay: 600
                     ToolTip.text: model.collapsed ? qsTr("Expand subproof") : qsTr("Collapse subproof")
                     onClicked: proofModel.toggleCollapsed(indexx)
+                }
                 }
 
 
@@ -903,7 +918,7 @@ Item {
                         console.log("Invalid Operation: Invalid reference to subproof")
                         cConnector.evalText = "⚠ " + qsTr("Invalid Operation: Cannot reference lines across closed subproof boundaries.")
                     } else {
-                        cConnector.evalText = "Evaluate Proof"
+                        cConnector.evalText = qsTr("Evaluate Proof")
                             proofModel.clearErrors()
                         var array = Array.from(proofModel.data(
                                                    proofModel.index(
@@ -980,7 +995,7 @@ Item {
                     border.color: {
                         if (type === "comment")
                             return darkMode ? "#2A2A1E" : "#FFFDE7"
-                        if (cConnector.evalText === "Evaluate Proof")
+                        if (cConnector.evalText === qsTr("Evaluate Proof"))
                             return darkMode ? "white" : "black"
                         if (model.errMsg !== "")
                             return "red"
@@ -1338,7 +1353,7 @@ Item {
                                                    listView.currentIndex,
                                                    0), ar, 263)
                             fileModified = true
-                            cConnector.evalText = "Evaluate Proof"
+                            cConnector.evalText = qsTr("Evaluate Proof")
                             proofModel.clearErrors()
                         }
 
@@ -1395,7 +1410,7 @@ Item {
                             proofModel.updateLines()
                             proofModel.updateRefs(insertIndex, true)
                             listView.currentIndex = insertIndex
-                            cConnector.evalText = "Evaluate Proof"
+                            cConnector.evalText = qsTr("Evaluate Proof")
                             proofModel.clearErrors()
                         }
                     }
@@ -1410,7 +1425,7 @@ Item {
                             proofModel.updateLines()
                             proofModel.updateRefs(index + 1, true)
                             listView.currentIndex = index + 1
-                            cConnector.evalText = "Evaluate Proof"
+                            cConnector.evalText = qsTr("Evaluate Proof")
                             proofModel.clearErrors()
                         }
                     }
@@ -1424,7 +1439,7 @@ Item {
                             proofModel.updateLines()
                             proofModel.updateRefs(index + 1, true)
                             listView.currentIndex = index + 1
-                            cConnector.evalText = "Evaluate Proof"
+                            cConnector.evalText = qsTr("Evaluate Proof")
                             proofModel.clearErrors()
                         }
                     }
@@ -1474,7 +1489,7 @@ Item {
                             proofModel.updateLines()
                             proofModel.updateRefs(index + 1, true)
                             listView.currentIndex = index + 1
-                            cConnector.evalText = "Evaluate Proof"
+                            cConnector.evalText = qsTr("Evaluate Proof")
                             proofModel.clearErrors()
                         }
                     }
@@ -1492,7 +1507,7 @@ Item {
                             proofModel.updateLines()
                             proofModel.updateRefs(index + 1, true)
                             listView.currentIndex = index + 1
-                            cConnector.evalText = "Evaluate Proof"
+                            cConnector.evalText = qsTr("Evaluate Proof")
                             proofModel.clearErrors()
                         }
                     }
@@ -1502,7 +1517,7 @@ Item {
                         enabled: true
 
                         onTriggered: {
-                            cConnector.evalText = "Evaluate Proof"
+                            cConnector.evalText = qsTr("Evaluate Proof")
                             proofModel.clearErrors()
 
                             if (listView.count > 1) {

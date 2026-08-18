@@ -20,7 +20,7 @@
 ProofData::ProofData(QObject *parent)
     : QObject{parent}
 {
-    m_proofLines.append({1,"","premise",false,false,false,0,{-1},NULL});
+    m_proofLines.append({1,"","premise",false,false,false,0,{-1},QString()});
 }
 
 QVector<ProofLine> ProofData::lines() const
@@ -54,8 +54,9 @@ bool ProofData::setLineAt(int index, const ProofLine &proofLine)
 // Set sd->file for a line (required for rule lemma i.e. import proof)
 void ProofData::setFile(int index, const QString &name)
 {
-    m_proofLines[index].fname = (unsigned char *) calloc(name.size()+1, sizeof(unsigned char));
-    memcpy(m_proofLines[index].fname, name.toStdString().c_str(), name.size());
+    if (index < 0 || index >= m_proofLines.size())
+        return;
+    m_proofLines[index].fname = name;
 }
 
 // Insert a proof line (in m_proofLines) at a valid index
@@ -72,7 +73,7 @@ void ProofData::insertLine(int index,int a, QString b, QString c, bool d, bool e
     aLine.pSubEnd = f;
     aLine.pInd = g;
     aLine.pRefs = h;
-    aLine.fname = NULL;
+    aLine.fname = QString();
     aLine.pErrorMsg = QString();  // always start with no error
     aLine.pRuleCategory = cat;
     aLine.pRuleIndex = idx;

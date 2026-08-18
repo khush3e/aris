@@ -316,7 +316,7 @@ void auxConnector::importProof(const QString &name, ProofData *pd, const Connect
  */
 void auxConnector::wasmImportProof(ProofData *pd, const Connector *c, ProofModel *pm)
 {
-    auto fileContentReady = [this, &c, &pd, &pm](const QString &fileName, const QByteArray &fileContent) {
+    auto fileContentReady = [this, c, pd, pm](const QString &fileName, const QByteArray &fileContent) {
         if (fileName.isEmpty()) {
             qDebug() << "No file was selected" ;
             emit importFinished(false);
@@ -363,8 +363,8 @@ void auxConnector::importProofWithMode(const QString &name, ProofData *pd, const
                        line.pSub, line.pSubStart, line.pSubEnd, line.pInd, refs,
                        line.pRuleCategory, line.pRuleIndex);
 
-        if (line.fname)
-            pd->setFile(targetIndex, QString::fromUtf8((const char *) line.fname));
+        if (!line.fname.isEmpty())
+            pd->setFile(targetIndex, line.fname);
     }
 
     pm->updateLines();
@@ -375,7 +375,8 @@ void auxConnector::importProofWithMode(const QString &name, ProofData *pd, const
 
 void auxConnector::wasmImportProofWithMode(ProofData *pd, const Connector *c, ProofModel *pm, int mode)
 {
-    auto fileContentReady = [this, &c, &pd, &pm, mode](const QString &fileName, const QByteArray &fileContent) {
+    // Capture pointers by value — see wasmImportProof() above for why.
+    auto fileContentReady = [this, c, pd, pm, mode](const QString &fileName, const QByteArray &fileContent) {
         if (fileName.isEmpty()) {
             qDebug() << "No file was selected" ;
             emit importFinished(false);
@@ -686,6 +687,27 @@ static QTextDocument *buildProofDocument(const ProofData *pd)
     }
 
     // Data rows
+    // Both pSubStart and pSubEnd lines expand into TWO table rows:
+    //
+    //  pSubStart:
+    //    row A: "┌─ subproof" separator (no number, no rule, greyed)
+    //    row B: actual assumption line (number, formula, rule, refs)
+    //
+    //  pSubEnd:
+    //    row A: "└─" closing separator (no number, no rule, greyed)
+    //    row B: actual content line (number, formula, refs)
+    //
+    // Pre-count both so we can allocate the table with the correct total size.
+    int splitRowCount = 0;
+    for (int i = 0; i < n; ++i)
+        if (lines.at(i).pSubStart || lines.at(i).pSubEnd) ++splitRowCount;
+
+    // Resize the table: insertTable gave us n+1 rows (header + one per line).
+    // Each split row needs one additional row for its content.
+    for (int k = 0; k < splitRowCount; ++k)
+        table->appendRows(1);
+
+    int tableRow = 1;  // tracks next available data row (row 0 is the header)
     for (int i = 0; i < n; ++i) {
         const ProofLine &pl = lines.at(i);
         int depth = pl.pInd / 20;
@@ -693,20 +715,83 @@ static QTextDocument *buildProofDocument(const ProofData *pd)
         // Indentation prefix (em-space per depth level)
         QString indent = QString(QChar(0x2003)).repeated(depth);  // EM SPACE
 
-        // Formula cell
+        if (pl.pSubStart) {
+            // --- Row A: "┌─ subproof" separator header ---
+            QTextCursor sepCell = table->cellAt(tableRow, 1).firstCursorPosition();
+            QTextCharFormat sepFmt = normalFmt;
+            sepFmt.setForeground(QColor(100, 100, 100));
+            sepCell.insertText(indent + QStringLiteral("\u250c\u2500 subproof"), sepFmt);  // ┌─
+            ++tableRow;
+
+            // --- Row B: actual assumption line ---
+            QString formula = indent + (pl.pText.isEmpty() ? QStringLiteral("(empty)") : pl.pText);
+            QString rule = pl.pType == QLatin1String("premise") ? QStringLiteral("premise") : pl.pType;
+            if (rule == QLatin1String("choose") || rule == QLatin1String("sf")) rule = QStringLiteral("sf");
+            QStringList refStrs;
+            for (int r : pl.pRefs)
+                if (r != -1) refStrs << QString::number(r);
+            QString refs = refStrs.join(QStringLiteral(", "));
+
+            auto insertAssumCell = [&](int col, const QString &txt) {
+                QTextCursor c = table->cellAt(tableRow, col).firstCursorPosition();
+                c.insertText(txt, normalFmt);
+            };
+            insertAssumCell(0, QString::number(pl.pLine));
+            insertAssumCell(1, formula);
+            insertAssumCell(2, rule);
+            insertAssumCell(3, refs);
+            ++tableRow;
+            continue;
+        }
+
+        if (pl.pSubEnd) {
+            // --- Row A: "└─" closing separator ---
+            QTextCursor sepCell = table->cellAt(tableRow, 1).firstCursorPosition();
+            QTextCharFormat sepFmt = normalFmt;
+            sepFmt.setForeground(QColor(100, 100, 100));
+            // Use one shallower indent level for the bracket since the content
+            // inside the subproof is at `depth`, and the closer brackets inward.
+            QString closerIndent = depth > 0 ? QString(QChar(0x2003)).repeated(depth - 1) : QString();
+            sepCell.insertText(closerIndent + QStringLiteral("\u2514\u2500"), sepFmt);  // └─
+            ++tableRow;
+
+            // --- Row B: actual content of this line ---
+            if (!pl.pText.isEmpty()) {
+                QString formula = indent + pl.pText;
+                // "subproof" type is structural — suppress rule label.
+                QString rule;
+                if (pl.pType != QLatin1String("subproof") && pl.pType != QLatin1String("comment")) {
+                    rule = (pl.pType == QLatin1String("premise")) ? QStringLiteral("premise") : pl.pType;
+                    if (rule == QLatin1String("choose")) rule = QString();
+                }
+                QStringList refStrs;
+                for (int r : pl.pRefs)
+                    if (r != -1) refStrs << QString::number(r);
+                QString refs = refStrs.join(QStringLiteral(", "));
+
+                auto insertEndCell = [&](int col, const QString &txt) {
+                    QTextCursor c = table->cellAt(tableRow, col).firstCursorPosition();
+                    c.insertText(txt, normalFmt);
+                };
+                insertEndCell(0, QString::number(pl.pLine));
+                insertEndCell(1, formula);
+                insertEndCell(2, rule);
+                insertEndCell(3, refs);
+            }
+            ++tableRow;
+            continue;
+        }
+
+        // Formula cell (normal lines and comments)
         QString formula;
-        if (pl.pSubStart)
-            formula = indent + QStringLiteral("\u250c\u2500 subproof");  // ┌─
-        else if (pl.pSubEnd)
-            formula = indent + QStringLiteral("\u2514\u2500");            // └─
-        else if (pl.pType == QLatin1String("comment"))
+        if (pl.pType == QLatin1String("comment"))
             formula = indent + QStringLiteral("// ") + pl.pText;
         else
             formula = indent + (pl.pText.isEmpty() ? QStringLiteral("(empty)") : pl.pText);
 
         // Rule
         QString rule;
-        if (!pl.pSubStart && !pl.pSubEnd && pl.pType != QLatin1String("comment")) {
+        if (pl.pType != QLatin1String("comment")) {
             rule = (pl.pType == QLatin1String("premise")) ? QStringLiteral("premise") : pl.pType;
             if (rule == QLatin1String("choose")) rule = QString();
         }
@@ -718,17 +803,18 @@ static QTextDocument *buildProofDocument(const ProofData *pd)
         QString refs = refStrs.join(QStringLiteral(", "));
 
         auto insertCell = [&](int col, const QString &txt, bool italic = false) {
-            QTextCursor c = table->cellAt(i + 1, col).firstCursorPosition();
+            QTextCursor c = table->cellAt(tableRow, col).firstCursorPosition();
             QTextCharFormat f = normalFmt;
             if (italic) f.setFontItalic(true);
             if (pl.pType == QLatin1String("comment")) f.setForeground(QColor(128, 128, 128));
             c.insertText(txt, f);
         };
 
-        insertCell(0, pl.pSubStart || pl.pSubEnd || pl.pType == QLatin1String("comment") ? QString() : QString::number(pl.pLine));
+        insertCell(0, pl.pType == QLatin1String("comment") ? QString() : QString::number(pl.pLine));
         insertCell(1, formula, pl.pType == QLatin1String("comment"));
         insertCell(2, rule);
         insertCell(3, refs);
+        ++tableRow;
     }
 
     // Footer note

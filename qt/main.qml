@@ -82,7 +82,7 @@ ApplicationWindow {
         fileExists = false
         fileModified = false
         filename = "Untitled"
-        cConnector.evalText = "Evaluate Proof"
+        cConnector.evalText = qsTr("Evaluate Proof")
         proofModel.clearErrors()
 
         if (goalDialogID.opened)
@@ -106,7 +106,7 @@ ApplicationWindow {
 
     function startImportFlow(mode) {
         importMode = mode
-        cConnector.evalText = "Evaluate Proof"
+        cConnector.evalText = qsTr("Evaluate Proof")
         proofModel.clearErrors()
         isExtFile = true
         importBehaviorID.close()
@@ -180,16 +180,16 @@ ApplicationWindow {
     footer: Label {
         height: statusID.implicitHeight + 10
         leftPadding: 12
-        visible: !(cConnector.evalText === "Correct!"
-                   || cConnector.evalText === "Evaluate Proof")
+        visible: !(cConnector.evalText === qsTr("Correct!")
+                   || cConnector.evalText === qsTr("Evaluate Proof"))
 
         Text {
             id: statusID
             anchors.verticalCenter: parent.verticalCenter
             anchors.left: parent.left
             anchors.leftMargin: 12
-            text: cConnector.evalText === "Errors found"
-                  ? "⚠ Errors found — see inline details above each failing line."
+            text: cConnector.evalText === qsTr("Errors found")
+                  ? "⚠ " + qsTr("Errors found — see inline details above each failing line.")
                   : cConnector.evalText
             color: darkMode ? "#CF6679" : "red"
             font.pointSize: thefont.pointSize + 1
@@ -297,7 +297,7 @@ ApplicationWindow {
             // Called at the very start of smartPaste() — mark proof as
             // coming from an external source so the UI renders ref numbers.
             isExtFile = true
-            cConnector.evalText = "Evaluate Proof"
+            cConnector.evalText = qsTr("Evaluate Proof")
             proofModel.clearErrors()
         }
 
@@ -987,7 +987,7 @@ ApplicationWindow {
         sequence: "Ctrl+Shift+E" // Cmd+Shift+E on macOS — avoids Emacs "end-of-line" conflict
         context: Qt.ApplicationShortcut
         onActivated: {
-            cConnector.evalText = "Evaluate Proof"
+            cConnector.evalText = qsTr("Evaluate Proof")
             cConnector.evalProof(theData, theGoals, proofModel)
             goalDataID.evalGoals(theGoals, cConnector)
         }
