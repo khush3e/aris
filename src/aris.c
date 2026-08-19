@@ -477,7 +477,12 @@ requires an argument, ignoring flag.\n");
           if (optarg)
             {
               c_ret = check_arg_text (optarg);
-              if (c_ret == -1)
+              /* check_arg_text returns:  1 = valid,  0 = parse error,
+               *                         -1 = memory error.
+               * Previously only -1 caused EXIT_FAILURE, so invalid text
+               * still printed "Correct!" and exited 0.  Fixed: require
+               * c_ret == 1                                */
+              if (c_ret != 1)
                 exit (EXIT_FAILURE);
               printf ("Correct!\n");
               exit (EXIT_SUCCESS);
