@@ -380,7 +380,9 @@ reverse_parse_parens (const unsigned char * in_str, const int init_pos, unsigned
 
         //When this is all finished, o_str will point to the string that is needed.
         strncpy (*out_str, in_str + paren_pos, init_pos - paren_pos + 1);
-        (*out_str)[init_pos - paren_pos + 2] = '\0';
+        /* Buffer was calloc'd and is already zero-terminated; the explicit
+         * write at index [init_pos - paren_pos + 2] that used to be here was
+         * one byte past the allocated region (buffer overflow —     */
     }
 
     return paren_pos;
@@ -519,15 +521,18 @@ check_conns (const unsigned char * chk_str)
 
         if (!strncmp (chk_str + j, NOT, NL))
         {
-            // Left side.
+            // Left side: a NOT must be immediately preceded by one of:
+            //   • the start of the string (j == 0)
+            //   • an opening parenthesis  (j >= 1 guard is implicit from j!=0)
+            //   • another NOT            (j >= NL ensures no OOB read)
+            //   • a binary connective    (j >= CL ensures no OOB read)
             if (!(j == 0
-                  || chk_str[j-1] == '('
+                  || (j >= 1  && chk_str[j-1] == '(')
                   || (j >= NL && !strncmp (chk_str + j - NL, NOT, NL))
                   || (j >= CL && IS_BIN_CONN (chk_str + j - CL))))
-
                 return 0;
 
-            // Right side
+            // Right side: NOT must not be the last token.
             if (j == chk_len - NL)
                 return 0;
         }
@@ -588,12 +593,16 @@ check_sides_quant (const unsigned char * chk_str, const unsigned int init_pos)
     //Allocate memory for a test string.
     unsigned char tmp_str[CL + 1];
 
-    //If this is not at the beginning of the string,
-    //then process the connective (if there is one) before it.
-    if (init_pos >= 0)
+    //If this quantifier is not at the very start of the string,
+    //then examine the CL bytes immediately before it to ensure that
+    //no other quantifier immediately precedes it (that would be an
+    //adjacent-quantifier error caught elsewhere, and reading before
+    //position 0 is undefined behaviour).
+    if (init_pos >= (unsigned int) CL)
     {
         //Copy enough memory for a connective.
         strncpy (tmp_str, chk_str - CL, CL);
+        tmp_str[CL] = '\0';
 
         //If this is a universal or existential, exit.
         if (!strncmp (tmp_str, UNV, CL) || !strncmp (tmp_str, EXL, CL))
@@ -637,75 +646,113 @@ check_sides_quant (const unsigned char * chk_str, const unsigned int init_pos)
 }
 
 /* Checks each quantifier of a string by running check_sides_quant.
+ *  Performs a scope-aware duplicate-binding check: two quantifiers in
+ *  disjoint scopes may bind the same variable name.  Re-binding within
+ *  the same scope (e.g. @x@x P(x) or @x(P(x)&@x(Q(x)))) is rejected.
  *  input:
  *    chk_str - the string to be checked.
  *  output:
  *    1 if every quantifier checks out, 0 otherwise.
+ *    AEC_MEM on memory error.
  */
 int
 check_quants (const unsigned char * chk_str)
 {
-
-    //The length of the input string.
-    int chk_len;
-
-    //Get the length of the input string.
-    chk_len = strlen ((const char *) chk_str);
-
-    int chk_sides, j;
-    vec_t * var_vec;
-    var_vec = init_vec (sizeof (char *));
-    if (!var_vec)
-        return AEC_MEM;
+    int chk_len = strlen ((const char *) chk_str);
+    int j;
 
     for (j = 0; j < chk_len - CL + 1; j++)
     {
         if (!strncmp (chk_str + j, UNV, CL) || !strncmp (chk_str + j, EXL, CL))
         {
-            chk_sides = check_sides_quant (chk_str + j, j);
+            /* 1. Validate the quantifier's syntactic context. */
+            int chk_sides = check_sides_quant (chk_str + j, j);
             if (chk_sides < 0)
                 return AEC_MEM;
-
             if (!chk_sides)
-            {
-                destroy_str_vec (var_vec);
                 return 0;
+
+            /* 2. Extract the bound variable name. */
+            unsigned char * bound_var = NULL;
+            int var_len = get_quant_var (chk_str + j + CL, &bound_var);
+            if (var_len == AEC_MEM)
+                return AEC_MEM;
+
+            /*  Compute the end of the scope governed by this quantifier.
+             *    Walk past any quantifier/NOT prefix chain, then call
+             *    parse_parens over the parenthesised group (same walk as
+             *    check_generalities at lines ~967-980).  If no opening paren
+             *    is found, the scope extends to the end of the string.      */
+            int scope_end = chk_len;
+            {
+                int pos = j + CL + var_len;
+
+                /* Skip leading NOT / quantifier prefix chain. */
+                while (pos < chk_len)
+                {
+                    if (!strncmp (chk_str + pos, UNV, CL)
+                        || !strncmp (chk_str + pos, EXL, CL))
+                    {
+                        pos += CL;
+                        while (pos < chk_len
+                               && (islower (chk_str[pos]) || isdigit (chk_str[pos])))
+                            pos++;
+                    }
+                    else if (!strncmp (chk_str + pos, NOT, NL))
+                    {
+                        pos += NL;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                if (pos < chk_len && chk_str[pos] == '(')
+                {
+                    int paren_end = parse_parens (chk_str, pos, NULL);
+                    if (paren_end == AEC_MEM)
+                    {
+                        free (bound_var);
+                        return AEC_MEM;
+                    }
+                    if (paren_end >= 0)
+                        scope_end = paren_end + 1; /* exclusive end */
+                }
             }
 
-            unsigned char * tmp_var;
-            chk_sides = get_quant_var (chk_str + j + CL, &tmp_var);
-            if (chk_sides == AEC_MEM)
-                return AEC_MEM;
+            /* 4. Search within [j+CL+var_len .. scope_end) for another
+             *    quantifier that re-binds the same variable.               */
+            int search_start = j + CL + var_len;
+            int k;
+            for (k = search_start; k < scope_end - CL + 1; k++)
+            {
+                if (!strncmp (chk_str + k, UNV, CL)
+                    || !strncmp (chk_str + k, EXL, CL))
+                {
+                    unsigned char * inner_var = NULL;
+                    int inner_len = get_quant_var (chk_str + k + CL, &inner_var);
+                    if (inner_len == AEC_MEM)
+                    {
+                        free (bound_var);
+                        return AEC_MEM;
+                    }
+                    if (!strcmp ((const char *) bound_var,
+                                 (const char *) inner_var))
+                    {
+                        free (inner_var);
+                        free (bound_var);
+                        return 0; /* duplicate binding within scope — reject */
+                    }
+                    free (inner_var);
+                }
+            }
 
-            chk_sides = vec_str_add_obj (var_vec, tmp_var);
-            if (chk_sides < 0)
-                return AEC_MEM;
-
-            free (tmp_var);
+            free (bound_var);
         }
     }
 
-    for (j = 0; j < var_vec->num_stuff; j++)
-    {
-        int k;
-        for (k = 0; k < var_vec->num_stuff; k++)
-        {
-            if (j == k)
-                continue;
-            if (!strcmp (vec_str_nth (var_vec, j), vec_str_nth (var_vec, k)))
-                break;
-        }
-        if (k != var_vec->num_stuff)
-            break;
-    }
-
-    chk_sides = (j == var_vec->num_stuff);
-    destroy_str_vec (var_vec);
-
-    if (!chk_sides)
-        return 0;
-
-    //No errors, so return true.
+    /* No errors — all quantifiers are well-formed and scope-unique. */
     return 1;
 }
 

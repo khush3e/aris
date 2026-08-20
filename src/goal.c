@@ -176,8 +176,22 @@ goal_check_line (goal_t * goal, sentence * sen)
     return AEC_MEM;
 
   int ret_check = check_text (cmp_text);
-  if (ret_check < 0)
+  /* check_text returns 0 on success, -1 on memory error, and negative codes
+   * -2..-9 for parse errors (parentheses, connectives, quantifiers, etc.).
+   * Previously ALL negative returns were treated as AEC_MEM, which meant a
+   * syntactically invalid goal text would propagate a fake memory error
+   * instead of simply being marked as unmet                    */
+  if (ret_check == AEC_MEM)
     return AEC_MEM;
+  if (ret_check < 0)
+    {
+      /* Goal text is not a valid FOL sentence — it can never be matched. */
+      free (cmp_text);
+      sentence_set_value (sen, VALUE_TYPE_FALSE);
+      sen_parent_set_sb ((sen_parent *) goal,
+                         "Goal text is not a valid sentence.");
+      return 0;
+    }
 
   item_t * ev_itr;
   int is_valid = 1;
