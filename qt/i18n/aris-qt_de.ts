@@ -11,12 +11,12 @@
     <message>
         <location filename="../connector.cpp" line="481"/>
         <source>File save failed for path: %1</source>
-        <translation>Speichern der Datei im Dateipfad %1 fehlgeschlagen</translation>
+        <translation>Speichern der Datei unter %1 fehlgeschlagen</translation>
     </message>
     <message>
         <location filename="../connector.cpp" line="514"/>
         <source>File open failed for path: %1</source>
-        <translation>Öffnen der Datei vom Dateipfad %1 fehlgeschlagen</translation>
+        <translation>Öffnen der Datei unter %1 fehlgeschlagen</translation>
     </message>
     <message>
         <source>Evaluate Proof</source>
@@ -75,7 +75,7 @@
     <message>
         <location filename="../DrawerTools.qml" line="136"/>
         <source>Toggle Dark Mode</source>
-        <translation>Dunkelmodus umschalten</translation>
+        <translation>Dunkelmodus ein-/ausschalten</translation>
     </message>
     <message>
         <location filename="../DrawerTools.qml" line="164"/>
@@ -90,7 +90,7 @@
     <message>
         <location filename="../DrawerTools.qml" line="220"/>
         <source>Paste Proof from Clipboard</source>
-        <translation>Beweis aus Zwischenablage einfügen</translation>
+        <translation>Beweis aus der Zwischenablage einfügen</translation>
     </message>
     <message>
         <location filename="../DrawerTools.qml" line="226"/>
@@ -250,7 +250,7 @@
     <message>
         <location filename="../ProofArea.qml" line="362"/>
         <source>Cannot convert structural subproof lines.</source>
-        <translation>Strukturelle Teilbeweiszeilen können nicht umgewandelt werden.</translation>
+        <translation>Zeilen eines strukturellen Teilbeweises können nicht umgewandelt werden.</translation>
     </message>
     <message>
         <location filename="../ProofArea.qml" line="369"/>
@@ -261,7 +261,7 @@
         <location filename="../ProofArea.qml" line="441"/>
         <location filename="../ProofArea.qml" line="1448"/>
         <source>Convert to Conclusion</source>
-        <translation>In Schlussfolgerung umwandeln</translation>
+        <translation>In Konklusion umwandeln</translation>
     </message>
     <message>
         <location filename="../ProofArea.qml" line="441"/>
@@ -277,7 +277,7 @@
     <message>
         <location filename="../ProofArea.qml" line="498"/>
         <source>Add Conclusion Below</source>
-        <translation>Schlussfolgerung unterhalb einfügen</translation>
+        <translation>Konklusion unterhalb einfügen</translation>
     </message>
     <message>
         <location filename="../ProofArea.qml" line="517"/>
@@ -312,7 +312,7 @@
     <message>
         <location filename="../ProofArea.qml" line="919"/>
         <source>Invalid Operation: Cannot reference lines across closed subproof boundaries.</source>
-        <translation>Ungültige Operation: Zeilen können nur innerhalb eines geschlossenen Teilbeweises referenziert werden.</translation>
+        <translation>Ungültige Operation: Zeilen können nicht über abgeschlossene Teilbeweisgrenzen hinweg referenziert werden.</translation>
     </message>
     <message>
         <location filename="../ProofArea.qml" line="1404"/>
@@ -322,7 +322,7 @@
     <message>
         <location filename="../ProofArea.qml" line="1418"/>
         <source>Add Conclusion</source>
-        <translation>Schlussfolgerung hinzufügen</translation>
+        <translation>Konklusion hinzufügen</translation>
     </message>
     <message>
         <location filename="../ProofArea.qml" line="1434"/>
@@ -383,7 +383,7 @@
     <message>
         <location filename="../ProofArea.qml" line="114"/>
         <source>Boolean</source>
-        <translation>Boolesch</translation>
+        <translation>Boolesche Regeln</translation>
     </message>
     <message>
         <location filename="../ProofArea.qml" line="119"/>
@@ -513,12 +513,12 @@
     <message>
         <location filename="../ProofArea.qml" line="121"/>
         <source>Null Quantifier</source>
-        <translation>Nullquantor</translation>
+        <translation>Leere Quantifizierung</translation>
     </message>
     <message>
         <location filename="../ProofArea.qml" line="121"/>
         <source>Prenex</source>
-        <translation>Pränexform</translation>
+        <translation>Pränex-Umformung</translation>
     </message>
     <message>
         <location filename="../ProofArea.qml" line="121"/>
@@ -665,7 +665,7 @@
     <message>
         <location filename="../main.qml" line="696"/>
         <source>Choose import behavior</source>
-        <translation>Importverhalten auswählen</translation>
+        <translation>Verhalten beim Import auswählen</translation>
     </message>
     <message>
         <location filename="../main.qml" line="705"/>
@@ -680,7 +680,7 @@
     <message>
         <location filename="../main.qml" line="729"/>
         <source>Prepend</source>
-        <translation>Vorne einfügen</translation>
+        <translation>Am Anfang einfügen</translation>
     </message>
     <message>
         <location filename="../main.qml" line="774"/>
@@ -695,7 +695,7 @@
     <message>
         <location filename="../main.qml" line="799"/>
         <source>Plain Text</source>
-        <translation>Reiner Text</translation>
+        <translation>Unformatierter Text</translation>
     </message>
     <message>
         <location filename="../main.qml" line="815"/>
@@ -756,7 +756,7 @@
     </message>
     <message>
         <source>Errors found — see inline details above each failing line.</source>
-        <translation>Fehler gefunden – Siehe die Details oberhalb der fehlerhaften Zeile.</translation>
+        <translation>Fehler gefunden – Siehe die Details oberhalb jeder fehlerhaften Zeile.</translation>
     </message>
 </context>
 <context>
@@ -791,7 +791,7 @@
     </message>
     <message>
         <source>Association must be done on a conjunction or disjunction.</source>
-        <translation>Assoziation kann nur bei einer Konjunktion oder Disjunktion angewendet werden..</translation>
+        <translation>Assoziation muss auf eine Konjunktion oder Disjunktion angewendet werden.</translation>
     </message>
     <message>
         <source>Association requires one (1) reference.</source>
@@ -827,7 +827,7 @@
     </message>
     <message>
         <source>Boolean Negation Error: Expected complementary cancellation or constant negation.</source>
-        <translation>Fehler bei der booleschen Negation: Erwartete komplementäre Auslöschung oder Konstantennegation.</translation>
+        <translation>Fehler bei der booleschen Negation: Erwartete komplementäre Auslöschung oder Negation einer Konstanten.</translation>
     </message>
     <message>
         <source>Boolean Negation requires one (1) reference.</source>
@@ -871,7 +871,7 @@
     </message>
     <message>
         <source>Constructive Dilemma Error: The antecedents or consequences do not correspond to the conclusion&apos;s disjuncts.</source>
-        <translation>Fehler beim konstruktiven Dilemma: Die Antezedenzien oder Konsequentien passen nicht zu den Disjunkten der Schlussfolgerung.</translation>
+        <translation>Fehler beim konstruktiven Dilemma: Die Antezedenzien oder Konsequenzien passen nicht zu den Disjunkten der Konklusion.</translation>
     </message>
     <message>
         <source>Constructive Dilemma Error: The structure of the conditionals or disjunctions does not match.</source>
@@ -923,7 +923,7 @@
     </message>
     <message>
         <source>Distribution must be done around a conjunction or a disjunction.</source>
-        <translation>„Distribution muss bei einer Konjunktion oder Disjunktion durchgeführt werden.</translation>
+        <translation>Distribution muss auf eine Konjunktion oder Disjunktion durchgeführt werden.</translation>
     </message>
     <message>
         <source>Distribution requires one (1) reference.</source>
@@ -955,7 +955,7 @@
     </message>
     <message>
         <source>Excluded Middle requires zero (0) references.</source>
-        <translation>Satz vom ausgeschlossenen Dritten erfordert null (0) Referenzen.</translation>
+        <translation>Satz vom ausgeschlossenen Dritten erfordert keine (0) Referenzen.</translation>
     </message>
     <message>
         <source>Existential Generalization constructed incorrectly.</source>
@@ -1015,7 +1015,7 @@
     </message>
     <message>
         <source>Identity requires zero (0) references.</source>
-        <translation>Identität erfordert null (0) Referenzen.</translation>
+        <translation>Identität erfordert keine (0) Referenzen.</translation>
     </message>
     <message>
         <source>Implication Error: Expected equivalence between a conditional (P -&gt; Q) and a disjunction (~P v Q).</source>
@@ -1039,7 +1039,7 @@
     </message>
     <message>
         <source>Invalid Reference: A referenced line has a syntax or evaluation error. First fix the error on that line.</source>
-        <translation>Ungültige Referenz: Eine referenzierte Zeile enthält einen Syntax- oder Auswertungsfehler. Behebe zuerst den Fehler in dieser Zeile.</translation>
+        <translation>Ungültige Referenz: Eine referenzierte Zeile enthält einen Syntax- oder Auswertungsfehler. Beheben Sie zuerst den Fehler in dieser Zeile.</translation>
     </message>
     <message>
         <source>Invalid Reference: One or more referenced line numbers do not exist in this proof.</source>
@@ -1087,19 +1087,19 @@
     </message>
     <message>
         <source>Null Quantification requires one (1) reference.</source>
-        <translation>Nullquantifikation erfordert eine (1) Referenz.</translation>
+        <translation>Leere Quantifizierung erfordert eine (1) Referenz.</translation>
     </message>
     <message>
         <source>Null Quantifier Error: Could not find a matching connective enclosing the quantifier.</source>
-        <translation>Nullquantor-Fehler: Es wurde keine passende Verknüpfung gefunden, die den Quantor umschließt.</translation>
+        <translation>Leere Quantifizierung-Fehler: Es wurde keine passende Verknüpfung gefunden, die den Quantor umschließt.</translation>
     </message>
     <message>
         <source>Null Quantifier Error: Removing the quantifier does not produce a sentence matching the other line.</source>
-        <translation>Nullquantor-Fehler: Das Entfernen des Quantors ergibt keinen Satz, der mit der anderen Zeile übereinstimmt.</translation>
+        <translation>Leere Quantifizierung-Fehler: Das Entfernen des Quantors ergibt keinen Satz, der mit der anderen Zeile übereinstimmt.</translation>
     </message>
     <message>
         <source>Null Quantifier Error: The point of difference must be a quantifier with no free occurrences of its variable.</source>
-        <translation>Nullquantor-Fehler: Die Differenzstelle muss ein Quantor sein, dessen Variable nicht frei vorkommt.</translation>
+        <translation>Leere Quantifizierung-Fehler: Die Differenzstelle muss ein Quantor sein, dessen Variable nicht frei vorkommt.</translation>
     </message>
     <message>
         <source>One of the antecedents did not match a disjunct from the reference.</source>
@@ -1119,7 +1119,7 @@
     </message>
     <message>
         <source>One of the consequences did not match a disjunct from the conclusion.</source>
-        <translation>Eines der Konsequentien stimmte mit keinem Disjunkt der Konklusion überein.</translation>
+        <translation>Eines der Konsequenzien stimmte mit keinem Disjunkt der Konklusion überein.</translation>
     </message>
     <message>
         <source>One of the consequences of a reference does not match an antecedent.</source>
@@ -1159,23 +1159,23 @@
     </message>
     <message>
         <source>Prenex Error: Could not find a matching connective enclosing the quantifier.</source>
-        <translation>Pränexform-Fehler: Es wurde keine passende Verknüpfung gefunden, die den Quantor umschließt.</translation>
+        <translation>Pränex-Umformung-Fehler: Es wurde keine passende Verknüpfung gefunden, die den Quantor umschließt.</translation>
     </message>
     <message>
         <source>Prenex Error: Moving the quantifier does not produce a sentence matching the other line.</source>
-        <translation>Pränexform-Fehler: Das Verschieben des Quantors ergibt keinen Satz, der mit der anderen Zeile übereinstimmt.</translation>
+        <translation>Pränex-Umformung-Fehler: Das Verschieben des Quantors ergibt keinen Satz, der mit der anderen Zeile übereinstimmt.</translation>
     </message>
     <message>
         <source>Prenex Error: The quantifier must be preceded by a connective for it to be moved.</source>
-        <translation>Pränexform-Fehler: Dem Quantor muss eine Verknüpfung vorausgehen, damit er verschoben werden kann.</translation>
+        <translation>Pränex-Umformung-Fehler: Dem Quantor muss eine Verknüpfung vorausgehen, damit er verschoben werden kann.</translation>
     </message>
     <message>
         <source>Prenex Error: The quantifier&apos;s scope must not be empty.</source>
-        <translation>Pränexform-Fehler: Der Geltungsbereich des Quantors darf nicht leer sein.</translation>
+        <translation>Pränex-Umformung-Fehler: Der Geltungsbereich des Quantors darf nicht leer sein.</translation>
     </message>
     <message>
         <source>Prenex requires one (1) reference.</source>
-        <translation>Die Pränexform erfordert eine (1) Referenz.</translation>
+        <translation>Die Pränex-Umformung erfordert eine (1) Referenz.</translation>
     </message>
     <message>
         <source>Rule &apos;sp&apos; (Subproof) can only reference the starting line of a subproof.</source>
@@ -1187,7 +1187,7 @@
     </message>
     <message>
         <source>Sequence requires zero (0) references.</source>
-        <translation>Folge erfordert null (0) Referenzen.</translation>
+        <translation>Folge erfordert keine (0) Referenzen.</translation>
     </message>
     <message>
         <source>Simplification requires one (1) reference.</source>
@@ -1323,7 +1323,7 @@
     </message>
     <message>
         <source>The rest of the sentences must be the same.</source>
-        <translation>Der Rest der Sätze muss identisch sein.</translation>
+        <translation>Der übrige Teil der Sätze muss identisch sein.</translation>
     </message>
     <message>
         <source>The second part must be the negation of the first.</source>
@@ -1447,7 +1447,7 @@
     </message>
     <message>
         <source>There must be a tautology or a contradiction within the difference.</source>
-        <translation>Innerhalb der Differenzstelle muss eine Tautologie oder ein Widerspruch vorhanden sein.</translation>
+        <translation>An der Differenzstelle muss eine Tautologie oder ein Widerspruch vorhanden sein.</translation>
     </message>
     <message>
         <source>There must be a universal at the beginning of the conclusion.</source>
@@ -1479,7 +1479,7 @@
     </message>
     <message>
         <source>There must be only two parts for distribution.</source>
-        <translation>Für die Distribution dürfen nur zwei Teile vorhanden sein.</translation>
+        <translation>Für die Distribution darf der Ausdruck nur aus zwei Teilen bestehen.</translation>
     </message>
     <message>
         <source>There must be quantifiers at the difference.</source>
@@ -1487,7 +1487,7 @@
     </message>
     <message>
         <source>Universal Generalization Error: The generalized variable must be arbitrary (not introduced by Existential Instantiation or unclosed assumptions).</source>
-        <translation>Fehler bei der universellen Generalisierung: Die zu generalisierende Variable muss beliebig sein (nicht instanziiert und nicht aus offener Annahme).</translation>
+        <translation>Fehler bei der universellen Generalisierung: Die zu generalisierende Variable muss beliebig sein (darf also nicht durch existenzielle Instanziierung eingeführt worden sein und darf nicht aus einer offenen Annahme stammen).</translation>
     </message>
     <message>
         <source>Universal Generalization constructed incorrectly.</source>
