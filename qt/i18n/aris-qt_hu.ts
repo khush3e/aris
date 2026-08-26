@@ -90,7 +90,7 @@
     <message>
         <location filename="../DrawerTools.qml" line="220"/>
         <source>Paste Proof from Clipboard</source>
-        <translation>Bizonyítás a vágólapra</translation>
+        <translation>Bizonyítás a vágólapról</translation>
     </message>
     <message>
         <location filename="../DrawerTools.qml" line="226"/>
@@ -600,7 +600,7 @@
     <message>
         <location filename="../auxconnector.cpp" line="855"/>
         <source>ODT export failed: could not write to &apos;%1&apos;.</source>
-        <translation>Az ODT-exportálás sikertelen: nem írható „%1”.</translation>
+        <translation>Az ODT-exportálás sikertelen: „%1” nem írható.</translation>
     </message>
     <message>
         <location filename="../auxconnector.cpp" line="896"/>
@@ -610,7 +610,7 @@
     <message>
         <location filename="../auxconnector.cpp" line="915"/>
         <source>PDF export failed: could not write to &apos;%1&apos;.</source>
-        <translation>A PDF-exportálás sikertelen: nem írható „%1”.</translation>
+        <translation>A PDF-exportálás sikertelen: „%1” nem írható.</translation>
     </message>
     <message>
         <location filename="../auxconnector.cpp" line="933"/>
@@ -775,7 +775,7 @@
     </message>
     <message>
         <source>All of the references except the disjunction reference must contain a conditional.</source>
-        <translation>A diszjunkcióra hivatkozó sor kivételével minden hivatkozásnak kondicionálist kell tartalmaznia.</translation>
+        <translation>A diszjunkcióra hivatkozó sor kivételével minden hivatkozásnak egy feltételt kell tartalmaznia.</translation>
     </message>
     <message>
         <source>All of the references must be used.</source>
@@ -783,7 +783,7 @@
     </message>
     <message>
         <source>All of the references must contain a conditional.</source>
-        <translation>Minden hivatkozásnak kondicionálist kell tartalmaznia.</translation>
+        <translation>Minden hivatkozásnak feltételt kell tartalmaznia.</translation>
     </message>
     <message>
         <source>Association constructed incorrectly.</source>
@@ -799,7 +799,7 @@
     </message>
     <message>
         <source>Boolean Dominance Error: Expected absorption with True/False constants.</source>
-        <translation>Logikai dominancia hiba: elnyelést vártunk az Igaz/Hamis konstansokkal.</translation>
+        <translation>Logikai dominancia hiba: abszorpció kellene igaz/hamis konstansokkal.</translation>
     </message>
     <message>
         <source>Boolean Domination requires one (1) reference.</source>
@@ -811,15 +811,15 @@
     </message>
     <message>
         <source>Boolean Identity Error: Simplifying or expanding the True/False constant does not produce a sentence matching the other line.</source>
-        <translation>Logikai identitás hiba: az Igaz/Hamis konstans egyszerűsítése vagy kibővítése nem eredményez a másik sorral egyező formulát.</translation>
+        <translation>Logikai identitás hiba: az igaz/hamis konstans egyszerűsítése vagy kibővítése nem eredményez a másik sorral egyező formulát.</translation>
     </message>
     <message>
         <source>Boolean Identity Error: The difference must be enclosed by a connective, not at the very start of the sentence.</source>
-        <translation>Logikai identitás hiba: a különbségnek egy kötőjel által körülvéve kell lennie, nem a formula legelején.</translation>
+        <translation>Logikai identitás hiba: a különbségnek egy összekötő által kell körülvéve lennie, nem a formula legelején.</translation>
     </message>
     <message>
         <source>Boolean Identity Error: The longer sentence must have a connective at the point of difference.</source>
-        <translation>Logikai identitás hiba: a hosszabb formulának kötőjelet kell tartalmaznia a különbség helyén.</translation>
+        <translation>Logikai identitás hiba: a hosszabb formulának összekötőt kell tartalmaznia a különbség helyén.</translation>
     </message>
     <message>
         <source>Boolean Identity requires one (1) reference.</source>
@@ -827,7 +827,7 @@
     </message>
     <message>
         <source>Boolean Negation Error: Expected complementary cancellation or constant negation.</source>
-        <translation>Logikai negáció hiba: komplementer kiejtést vagy konstans tagadását vártunk.</translation>
+        <translation>Logikai negáció hiba: komplementer kiejtése vagy konstans tagadása kellene.</translation>
     </message>
     <message>
         <source>Boolean Negation requires one (1) reference.</source>
@@ -875,7 +875,7 @@
     </message>
     <message>
         <source>Constructive Dilemma Error: The structure of the conditionals or disjunctions does not match.</source>
-        <translation>Konstruktív dilemma hiba: a kondicionálisok vagy diszjunkciók szerkezete nem egyezik.</translation>
+        <translation>Konstruktív dilemma hiba: a feltételek vagy diszjunkciók szerkezete nem egyezik.</translation>
     </message>
     <message>
         <source>Constructive Dilemma requires at least three (3) references.</source>
@@ -891,11 +891,11 @@
     </message>
     <message>
         <source>DeMorgan Error: Expected equivalence when distributing negation across conjunction or disjunction.</source>
-        <translation>De Morgan hiba: ekvivalenciát vártunk a tagadás konjunkción vagy diszjunkción történő szétosztásakor.</translation>
+        <translation>De Morgan hiba: ekvivalencia kellene a tagadás konjunkción vagy diszjunkción történő szétosztásakor.</translation>
     </message>
     <message>
         <source>DeMorgan Quantifier Error: Expected a quantifier on the negated statement.</source>
-        <translation>De Morgan kvantor hiba: a tagadott állításon kvantort vártunk.</translation>
+        <translation>De Morgan kvantor hiba: a tagadott állítást kvantálni kellene.</translation>
     </message>
     <message>
         <source>DeMorgan constructed incorrectly.</source>
@@ -1019,7 +1019,7 @@
     </message>
     <message>
         <source>Implication Error: Expected equivalence between a conditional (P -&gt; Q) and a disjunction (~P v Q).</source>
-        <translation>Implikáció hiba: ekvivalenciát vártunk egy kondicionális (P -&gt; Q) és egy diszjunkció (~P v Q) között.</translation>
+        <translation>Implikáció hiba: ekvivalenciát vártunk egy feltétel (P -&gt; Q) és egy diszjunkció (~P v Q) között.</translation>
     </message>
     <message>
         <source>Implication requires one (1) reference.</source>
@@ -1039,7 +1039,7 @@
     </message>
     <message>
         <source>Invalid Reference: A referenced line has a syntax or evaluation error. First fix the error on that line.</source>
-        <translation>Érvénytelen hivatkozás: egy hivatkozott sor szintaktikai vagy kiértékelési hibát tartalmaz. Először javítsa ki a hibát azon a sorban.</translation>
+        <translation>Érvénytelen hivatkozás: egy hivatkozott sor szintaktikai vagy kiértékelési hibát tartalmaz. A hibát először abban a sorban kell javítani.</translation>
     </message>
     <message>
         <source>Invalid Reference: One or more referenced line numbers do not exist in this proof.</source>
@@ -1055,23 +1055,23 @@
     </message>
     <message>
         <source>Missing Rule: Please select a justification rule for this proof line.</source>
-        <translation>Hiányzó szabály: válasszon indoklási szabályt ehhez a bizonyítási sorhoz.</translation>
+        <translation>Hiányzó szabály: indoklási szabályt kell választani ehhez a bizonyítási sorhoz.</translation>
     </message>
     <message>
         <source>Modus Ponens Error: Neither the antecedent nor the consequence of the conditional matches the premise or conclusion. Check your references and line order.</source>
-        <translation>Modus ponens hiba: sem a kondicionális előtagja, sem az utótagja nem egyezik a premisszával vagy a konklúzióval. Ellenőrizze a hivatkozásokat és a sorok sorrendjét.</translation>
+        <translation>Modus ponens hiba: sem a kondicionális előtagja, sem az utótagja nem egyezik a premisszával vagy a konklúzióval. A hivatkozásokat és a sorok sorrendjét ellenőrizni kell.</translation>
     </message>
     <message>
         <source>Modus Ponens Error: One of the references must be a conditional statement (-&gt;).</source>
-        <translation>Modus ponens hiba: az egyik hivatkozásnak kondicionális állításnak (-&gt;) kell lennie.</translation>
+        <translation>Modus ponens hiba: az egyik hivatkozásnak feltételes állításnak (-&gt;) kell lennie.</translation>
     </message>
     <message>
         <source>Modus Ponens Error: The antecedent of the conditional (-&gt;) does not match the minor premise reference.</source>
-        <translation>Modus ponens hiba: a kondicionális (-&gt;) előtagja nem egyezik a kishivatkozott premisszával.</translation>
+        <translation>Modus ponens hiba: a feltétel (-&gt;) előtagja nem egyezik a kishivatkozott premisszával.</translation>
     </message>
     <message>
         <source>Modus Ponens Error: The consequence of the conditional (-&gt;) does not match the conclusion.</source>
-        <translation>Modus ponens hiba: a kondicionális (-&gt;) utótagja nem egyezik a konklúzióval.</translation>
+        <translation>Modus ponens hiba: a feltétel (-&gt;) utótagja nem egyezik a konklúzióval.</translation>
     </message>
     <message>
         <source>Modus Ponens requires two (2) references.</source>
@@ -1143,7 +1143,7 @@
     </message>
     <message>
         <source>One of the references must contain an XOR as its top connective.</source>
-        <translation>Az egyik hivatkozásnak kizáró vagy-t kell tartalmaznia legfelső kötőjelként.</translation>
+        <translation>Az egyik hivatkozásnak kizáró vagy műveletet kell tartalmaznia legfelső kötőjelként.</translation>
     </message>
     <message>
         <source>One of the references or conclusion does not match up with a disjunct.</source>
@@ -1159,7 +1159,7 @@
     </message>
     <message>
         <source>Prenex Error: Could not find a matching connective enclosing the quantifier.</source>
-        <translation>Prenex hiba: nem található a kvantort körülölelő megfelelő kötőjel.</translation>
+        <translation>Prenex hiba: nem található a kvantort körülölelő megfelelő összekötő.</translation>
     </message>
     <message>
         <source>Prenex Error: Moving the quantifier does not produce a sentence matching the other line.</source>
@@ -1167,7 +1167,7 @@
     </message>
     <message>
         <source>Prenex Error: The quantifier must be preceded by a connective for it to be moved.</source>
-        <translation>Prenex hiba: a kvantor előtt kötőjelnek kell állnia ahhoz, hogy áthelyezhető legyen.</translation>
+        <translation>Prenex hiba: a kvantor előtt összekötőnek kell állnia ahhoz, hogy áthelyezhető legyen.</translation>
     </message>
     <message>
         <source>Prenex Error: The quantifier&apos;s scope must not be empty.</source>
@@ -1179,11 +1179,11 @@
     </message>
     <message>
         <source>Rule &apos;sp&apos; (Subproof) can only reference the starting line of a subproof.</source>
-        <translation>Az „sp” (al-bizonyítás) szabály csak egy al-bizonyítás kezdősorára hivatkozhat.</translation>
+        <translation>Az „ab” (al-bizonyítás) szabály csak egy al-bizonyítás kezdősorára hivatkozhat.</translation>
     </message>
     <message>
         <source>Rule not recognized.</source>
-        <translation>A szabály nem ismert fel.</translation>
+        <translation>A szabályt nem lehet felismerni.</translation>
     </message>
     <message>
         <source>Sequence requires zero (0) references.</source>
@@ -1195,11 +1195,11 @@
     </message>
     <message>
         <source>Subproof Error: The premise of the subproof must match the conditional&apos;s antecedent, and the subproof conclusion must match the consequence.</source>
-        <translation>Al-bizonyítás hiba: az al-bizonyítás premisszájának egyeznie kell a kondicionális előtagjával, az al-bizonyítás konklúziójának pedig az utótaggal.</translation>
+        <translation>Al-bizonyítás hiba: az al-bizonyítás premisszájának egyeznie kell a feltétel előtagjával, az al-bizonyítás konklúziójának pedig az utótaggal.</translation>
     </message>
     <message>
         <source>Subproof Error: The rule &apos;sp&apos; requires a subproof line as a reference.</source>
-        <translation>Al-bizonyítás hiba: az „sp” szabály al-bizonyítás sort igényel hivatkozásként.</translation>
+        <translation>Al-bizonyítás hiba: az „ab” szabály al-bizonyítás sort igényel hivatkozásként.</translation>
     </message>
     <message>
         <source>Subsumption constructed incorrectly.</source>
@@ -1207,7 +1207,7 @@
     </message>
     <message>
         <source>Subsumption must be done around a connective.</source>
-        <translation>Az egybefoglalást egy kötőjel körül kell elvégezni.</translation>
+        <translation>Az egybefoglalást egy összekötő körül kell elvégezni.</translation>
     </message>
     <message>
         <source>Subsumption must be done around a disjunction or a conjunction.</source>
@@ -1215,7 +1215,7 @@
     </message>
     <message>
         <source>Subsumption must be done around two connectives.</source>
-        <translation>Az egybefoglalást két kötőjel körül kell elvégezni.</translation>
+        <translation>Az egybefoglalást két összekötő körül kell elvégezni.</translation>
     </message>
     <message>
         <source>Subsumption requires one (1) reference.</source>
@@ -1231,7 +1231,7 @@
     </message>
     <message>
         <source>Syntax Error: Chaining conditionals (-&gt;), biconditionals (&lt;-&gt;), or XOR without enclosing parentheses is ambiguous.</source>
-        <translation>Szintaktikai hiba: kondicionálisok (-&gt;), bikondicionálisok (&lt;-&gt;) vagy kizáró vagy összefűzése záró zárójelek nélkül félreérthető.</translation>
+        <translation>Szintaktikai hiba: feltételek (-&gt;), ekvivalenciák (&lt;-&gt;) vagy kizáró vagy összefűzése záró zárójelek nélkül félreérthető.</translation>
     </message>
     <message>
         <source>Syntax Error: Individual terms and variables must start with a lowercase letter (a-z) or number.</source>
@@ -1243,7 +1243,7 @@
     </message>
     <message>
         <source>Syntax Error: Mismatched parentheses. Check opening and closing brackets.</source>
-        <translation>Szintaktikai hiba: nem megfelelő zárójelezés. Ellenőrizze a nyitó és záró zárójeleket.</translation>
+        <translation>Szintaktikai hiba: nem megfelelő zárójelezés. A nyitó és záró zárójeleket ellenőrizni kell.</translation>
     </message>
     <message>
         <source>Syntax Error: Predicate or propositional variable names must start with an uppercase letter (A-Z).</source>
@@ -1255,7 +1255,7 @@
     </message>
     <message>
         <source>Syntax Error: Unrecognized or invalid logical connective symbol.</source>
-        <translation>Szintaktikai hiba: ismeretlen vagy érvénytelen logikai kötőjel-szimbólum.</translation>
+        <translation>Szintaktikai hiba: ismeretlen vagy érvénytelen logikai összekötő-szimbólum.</translation>
     </message>
     <message>
         <source>Syntax Error: Unrecognized or invalid quantifier symbol.</source>
@@ -1263,7 +1263,7 @@
     </message>
     <message>
         <source>The conclusion must contain an XOR.</source>
-        <translation>A konklúziónak kizáró vagy-t kell tartalmaznia.</translation>
+        <translation>A konklúziónak kizáró vagy műveletet kell tartalmaznia.</translation>
     </message>
     <message>
         <source>The conclusion must have an identity predicate.</source>
@@ -1275,7 +1275,7 @@
     </message>
     <message>
         <source>The connective must be a conjunction or disjunction.</source>
-        <translation>A kötőjelnek konjunkciónak vagy diszjunkciónak kell lennie.</translation>
+        <translation>Az összekötőnek konjunkciónak vagy diszjunkciónak kell lennie.</translation>
     </message>
     <message>
         <source>The difference must be a bound variable.</source>
@@ -1287,7 +1287,7 @@
     </message>
     <message>
         <source>The final argument of the sequence&apos;s function must be the variable.</source>
-        <translation>A sorozat függvényének utolsó argumentumának a változónak kell lennie.</translation>
+        <translation>A sorozat függvényében az utolsó argumentumnak a változónak kell lennie.</translation>
     </message>
     <message>
         <source>The first argument must be a value function.</source>
@@ -1347,7 +1347,7 @@
     </message>
     <message>
         <source>The two connectives must be complementary to one another.</source>
-        <translation>A két kötőjelnek egymás komplementerének kell lennie.</translation>
+        <translation>A két összekötőnek egymás komplementerének kell lennie.</translation>
     </message>
     <message>
         <source>The two references must match the two disjuncts of the XOR conclusion.</source>
@@ -1371,15 +1371,15 @@
     </message>
     <message>
         <source>There must be a biconditional in one sentence.</source>
-        <translation>Az egyik formulának bikondicionálist kell tartalmaznia.</translation>
+        <translation>Az egyik formulának ekvivalenciát kell tartalmaznia.</translation>
     </message>
     <message>
         <source>There must be a conditional in both sentences.</source>
-        <translation>Mindkét formulának kondicionálist kell tartalmaznia.</translation>
+        <translation>Mindkét formulának feltételt kell tartalmaznia.</translation>
     </message>
     <message>
         <source>There must be a conditional in the conclusion.</source>
-        <translation>A konklúziónak kondicionálist kell tartalmaznia.</translation>
+        <translation>A konklúziónak feltételt kell tartalmaznia.</translation>
     </message>
     <message>
         <source>There must be a conjunction in the conclusion.</source>
@@ -1399,19 +1399,19 @@
     </message>
     <message>
         <source>There must be a connective at the difference.</source>
-        <translation>A különbség helyén kötőjelnek kell lennie.</translation>
+        <translation>A különbség helyén összekötőnek kell lennie.</translation>
     </message>
     <message>
         <source>There must be a connective in both sentences.</source>
-        <translation>Mindkét formulának kötőjelet kell tartalmaznia.</translation>
+        <translation>Mindkét formulának összekötőt kell tartalmaznia.</translation>
     </message>
     <message>
         <source>There must be a connective in one sentence.</source>
-        <translation>Az egyik formulának kötőjelet kell tartalmaznia.</translation>
+        <translation>Az egyik formulának összekötőt kell tartalmaznia.</translation>
     </message>
     <message>
         <source>There must be a connective in the longer sentence.</source>
-        <translation>A hosszabb formulának kötőjelet kell tartalmaznia.</translation>
+        <translation>A hosszabb formulának összekötőt kell tartalmaznia.</translation>
     </message>
     <message>
         <source>There must be a disjunction in the conclusion.</source>
@@ -1459,7 +1459,7 @@
     </message>
     <message>
         <source>There must be connectives on both sentences.</source>
-        <translation>Mindkét formulának tartalmaznia kell kötőjeleket.</translation>
+        <translation>Mindkét formulának tartalmaznia kell összekötőket.</translation>
     </message>
     <message>
         <source>There must be generalities at the difference.</source>
@@ -1479,7 +1479,7 @@
     </message>
     <message>
         <source>There must be only two parts for distribution.</source>
-        <translation>A disztributivitáshoz csak két résznek szabad lennie.</translation>
+        <translation>A disztributivitáshoz csak két rész tartozhat.</translation>
     </message>
     <message>
         <source>There must be quantifiers at the difference.</source>
